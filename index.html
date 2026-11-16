@@ -79,7 +79,8 @@ const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 let view='shops',q={s:'',cat:'',ward:'',sort:'rating'};
 const shop=id=>db.shops.find(s=>s.id==id);
 const wards=()=>[...new Set(db.shops.map(s=>s.ward).filter(Boolean))].sort();
-const toast=m=>alert(m);
+const toast=m=>{const t=document.createElement('div');t.textContent=m;t.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1b2a22;color:#fff;padding:10px 18px;border-radius:12px;z-index:99';document.body.appendChild(t);setTimeout(()=>t.remove(),2500)};
+const ask=(m,fn)=>{const d=$('#dlg');d.innerHTML=`<p>${esc(m)}</p><div class="row"><button class="btn" id="yes">Đồng ý</button><button class="btn s" onclick="dlg.close()">Hủy</button></div>`;d.showModal();$('#yes').onclick=()=>{d.close();fn()}};
 function bar(kind){return `<div class="bar"><input id="qs" placeholder="🔍 Tìm ${kind==='shops'?'hộ kinh doanh, chủ hộ, địa chỉ':'mặt hàng, cửa hàng'}..." value="${esc(q.s)}">
 ${kind==='shops'?`<select id="qw"><option value="">Tất cả khu vực</option>${wards().map(w=>`<option ${q.ward==w?'selected':''}>${esc(w)}</option>`).join('')}</select>`:''}
 <select id="qo">${kind==='shops'?`<option value="rating">Đánh giá cao</option><option value="name">Tên A-Z</option>`:`<option value="name">Tên A-Z</option><option value="pa">Giá tăng dần</option><option value="pd">Giá giảm dần</option>`}</select></div>
@@ -112,15 +113,15 @@ $('#dlg').innerHTML=`<div class="row" style="justify-content:space-between"><div
 <div class="row" style="margin:12px 0"><a class="btn g" href="tel:${esc(s.phone)}">📞 ${esc(s.phone)}</a><a class="btn s" target="_blank" href="https://zalo.me/${esc(s.phone)}">Chat Zalo</a><a class="btn s" target="_blank" href="https://www.google.com/maps/search/${encodeURIComponent(s.addr+' '+s.ward)}">Bản đồ</a></div>
 <b>Mặt hàng (${ps.length})</b>${ps.map(p=>`<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--bd);padding:8px 0"><span>${esc(p.name)}<br><small class="${p.stock>0?'ok':'no'}">${p.stock>0?'Còn hàng':'Hết hàng'}</small></span><span class="price">${money(p.price)}/${esc(p.unit)}</span></div>`).join('')||'<div class="mu">Chưa có mặt hàng.</div>'}`;
 $('#dlg').showModal()}
-function manage(A){A.innerHTML=`<h2>Quản lý dữ liệu</h2><div class="row"><button class="btn" onclick="form('shop')">+ Hộ kinh doanh</button><button class="btn" onclick="form('product')">+ Mặt hàng</button>
-<button class="btn s" onclick="exp()">⬇ Xuất JSON</button><button class="btn s" onclick="csv()">⬇ Xuất CSV mặt hàng</button><label class="btn s">⬆ Nhập JSON<input type="file" accept=".json" hidden onchange="imp(this)"></label><button class="btn s" onclick="if(confirm('Khôi phục dữ liệu mẫu? Dữ liệu hiện tại sẽ mất.')){db=seed();save();render()}">Khôi phục mẫu</button></div>
+function manage(A){A.innerHTML=`<h2>Quản lý dữ liệu</h2><div class="row"><button class="btn" onclick="openForm('shop')">+ Hộ kinh doanh</button><button class="btn" onclick="openForm('product')">+ Mặt hàng</button>
+<button class="btn s" onclick="exp()">⬇ Xuất JSON</button><button class="btn s" onclick="csv()">⬇ Xuất CSV mặt hàng</button><label class="btn s">⬆ Nhập JSON<input type="file" accept=".json" hidden onchange="imp(this)"></label><button class="btn s" onclick="ask('Khôi phục dữ liệu mẫu? Dữ liệu hiện tại sẽ mất.',()=>{db=seed();save();render()})">Khôi phục mẫu</button></div>
 <h2>Hộ kinh doanh (${db.shops.length})</h2><div class="tw"><table><tr><th>Tên</th><th>Chủ hộ</th><th>Ngành</th><th>Khu vực</th><th>SĐT</th><th></th></tr>
-${db.shops.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(s.owner)}</td><td>${esc(s.cat)}</td><td>${esc(s.ward)}</td><td>${esc(s.phone)}</td><td><button class="btn s sm" onclick="form('shop','${s.id}')">Sửa</button> <button class="btn s sm" onclick="del('shops','${s.id}')">Xóa</button></td></tr>`).join('')}</table></div>
+${db.shops.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(s.owner)}</td><td>${esc(s.cat)}</td><td>${esc(s.ward)}</td><td>${esc(s.phone)}</td><td><button class="btn s sm" onclick="openForm('shop','${s.id}')">Sửa</button> <button class="btn s sm" onclick="del('shops','${s.id}')">Xóa</button></td></tr>`).join('')}</table></div>
 <h2>Mặt hàng (${db.products.length})</h2><div class="tw"><table><tr><th>Tên</th><th>Cửa hàng</th><th>Giá</th><th>Tồn</th><th></th></tr>
-${db.products.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(shop(p.shopId)?.name||'-')}</td><td>${money(p.price)}/${esc(p.unit)}</td><td>${esc(p.stock)}</td><td><button class="btn s sm" onclick="form('product','${p.id}')">Sửa</button> <button class="btn s sm" onclick="del('products','${p.id}')">Xóa</button></td></tr>`).join('')}</table></div>
+${db.products.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(shop(p.shopId)?.name||'-')}</td><td>${money(p.price)}/${esc(p.unit)}</td><td>${esc(p.stock)}</td><td><button class="btn s sm" onclick="openForm('product','${p.id}')">Sửa</button> <button class="btn s sm" onclick="del('products','${p.id}')">Xóa</button></td></tr>`).join('')}</table></div>
 <div class="mu">Dữ liệu được lưu trên trình duyệt của bạn. Dùng "Xuất JSON" để sao lưu.</div>`}
 const opt=(a,v)=>a.map(x=>`<option ${x==v?'selected':''}>${esc(x)}</option>`).join('');
-function form(type,id){const isS=type==='shop';const d=(isS?db.shops:db.products).find(x=>x.id==id)||{};const C=Object.keys(CATS);
+function openForm(type,id){const isS=type==='shop';const d=(isS?db.shops:db.products).find(x=>x.id==id)||{};const C=Object.keys(CATS);
 const F=isS?[['name','Tên hộ kinh doanh','w'],['owner','Chủ hộ'],['phone','Số điện thoại'],['cat','Ngành hàng','sel'],['ward','Khu vực (phường/xã)'],['addr','Địa chỉ','w'],['hours','Giờ mở cửa'],['mst','MST/Số ĐKKD'],['rating','Đánh giá (1-5)','n'],['desc','Giới thiệu','t']]
 :[['name','Tên mặt hàng','w'],['shopId','Hộ kinh doanh','shop'],['cat','Nhóm hàng','sel'],['price','Giá (đ)','n'],['unit','Đơn vị'],['stock','Tồn kho','n'],['desc','Mô tả','t']];
 $('#dlg').innerHTML=`<h2 style="margin-top:0">${id?'Sửa':'Thêm'} ${isS?'hộ kinh doanh':'mặt hàng'}</h2><div class="f">${F.map(([k,l,t])=>{const v=d[k]??'';const w=(t=='w'||t=='t')?'w':'';
@@ -130,7 +131,7 @@ $('#sv').onclick=()=>{const o={...d};$('#dlg').querySelectorAll('[name]').forEac
 if(!o.name)return toast('Vui lòng nhập tên.');if(isS&&!o.phone)return toast('Vui lòng nhập số điện thoại.');if(!isS&&!db.shops.length)return toast('Hãy thêm hộ kinh doanh trước.');
 if(isS&&o.rating==null)o.rating=5;if(isS&&!(o.rating>=1&&o.rating<=5))o.rating=5;
 const arr=isS?db.shops:db.products;if(d.id)arr[arr.findIndex(x=>x.id==d.id)]=o;else{o.id=uid(isS?'s':'p');arr.push(o)}save();dlg.close();render()};$('#dlg').showModal()}
-function del(k,id){if(!confirm('Xóa mục này?'))return;db[k]=db[k].filter(x=>x.id!=id);if(k=='shops')db.products=db.products.filter(p=>p.shopId!=id);save();render()}
+function del(k,id){ask('Xóa mục này?',()=>{db[k]=db[k].filter(x=>x.id!=id);if(k=='shops')db.products=db.products.filter(p=>p.shopId!=id);save();render()})}
 function dl(n,t,m){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:m}));a.download=n;a.click()}
 function exp(){dl('nhan-dan-mua-sam.json',JSON.stringify(db,null,1),'application/json')}
 function csv(){const r=[['Tên','Cửa hàng','Nhóm','Giá','Đơn vị','Tồn','Mô tả'],...db.products.map(p=>[p.name,shop(p.shopId)?.name,p.cat,p.price,p.unit,p.stock,p.desc])];
