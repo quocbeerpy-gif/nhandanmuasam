@@ -42,6 +42,7 @@ table{border-collapse:collapse;width:100%;font-size:14px}th,td{text-align:left;p
 html{-webkit-text-size-adjust:100%}button,a{touch-action:manipulation}input,select,textarea{font-size:16px}dialog{max-height:88vh;max-height:88dvh;overflow:auto}
 @media(max-width:900px){main{padding:12px}.grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}}
 @media(max-width:640px){header{padding:8px 12px;gap:8px}.logo{font-size:16px}nav{margin-left:0;width:100%;overflow-x:auto}nav button{flex:1;padding:8px 6px;font-size:13px;white-space:nowrap}.hero{padding:20px 16px;border-radius:16px}.stat{flex:1 1 90px;padding:8px 12px}.stat b{font-size:19px}.grid{grid-template-columns:1fr 1fr;gap:10px}.card{padding:12px}.f{grid-template-columns:1fr}dialog{padding:16px;width:calc(100% - 16px)}.row .btn{flex:1 1 auto;text-align:center}th,td{padding:8px 10px}}
+.zalo{background:#0068ff!important;color:#fff!important;border:0!important}.pimg{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:12px;background:var(--sf)}.thumb{width:40px;height:40px;object-fit:cover;border-radius:8px;vertical-align:middle;flex:none}
 @media(max-width:420px){.grid{grid-template-columns:1fr}}
 footer{text-align:center;color:var(--mu);font-size:13px;padding:24px}
 </style></head><body>
@@ -78,14 +79,15 @@ products:[
 {id:'p13',shopId:'s6',name:'Bình hoa gốm men rạn',cat:'Thủ công mỹ nghệ',price:350000,unit:'cái',stock:6,desc:'Làm thủ công.'},
 {id:'p14',shopId:'s6',name:'Bộ ấm trà gốm',cat:'Thủ công mỹ nghệ',price:520000,unit:'bộ',stock:4,desc:''}]});
 let db;try{db=JSON.parse(localStorage.getItem(KEY))}catch(e){}if(!db||!db.shops)db=seed();
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}};
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){toast('Bộ nhớ trình duyệt đã đầy, hãy xóa bớt ảnh hoặc xuất JSON để sao lưu.')}};
 const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 let view='shops',q={s:'',cat:'',ward:'',sort:'rating'};
 const shop=id=>db.shops.find(s=>s.id==id);
+const zl=s=>{let n=String(s.zalo||s.phone||'').replace(/\D/g,'');if(n.startsWith('0'))n='84'+n.slice(1);return n};const zUrl=s=>'https://zalo.me/'+zl(s);
 const wards=()=>[...new Set(db.shops.map(s=>s.ward).filter(Boolean))].sort();
 const toast=m=>{const t=document.createElement('div');t.textContent=m;t.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1b2a22;color:#fff;padding:10px 18px;border-radius:12px;z-index:99';document.body.appendChild(t);setTimeout(()=>t.remove(),2500)};
 const ask=(m,fn)=>{const d=$('#dlg');d.innerHTML=`<p>${esc(m)}</p><div class="row"><button class="btn" id="yes">Đồng ý</button><button class="btn s" onclick="dlg.close()">Hủy</button></div>`;d.showModal();$('#yes').onclick=()=>{d.close();fn()}};
-function bar(kind){return `<div class="bar"><input id="qs" placeholder="🔍 Tìm ${kind==='shops'?'hộ kinh doanh, chủ hộ, địa chỉ':'mặt hàng, cửa hàng'}..." value="${esc(q.s)}">
+function bar(kind){return `<div class="bar"><input id="qs" placeholder="🔍 Tìm ${kind==='shops'?'hộ kinh doanh, chủ hộ, địa chỉ, mặt hàng đang bán':'mặt hàng, cửa hàng'}..." value="${esc(q.s)}">
 ${kind==='shops'?`<select id="qw"><option value="">Tất cả khu vực</option>${wards().map(w=>`<option ${q.ward==w?'selected':''}>${esc(w)}</option>`).join('')}</select>`:''}
 <select id="qo">${kind==='shops'?`<option value="rating">Đánh giá cao</option><option value="name">Tên A-Z</option>`:`<option value="name">Tên A-Z</option><option value="pa">Giá tăng dần</option><option value="pd">Giá giảm dần</option>`}</select></div>
 <div class="chips"><button class="chip ${!q.cat?'on':''}" data-c="">Tất cả</button>${Object.keys(CATS).map(c=>`<button class="chip ${q.cat==c?'on':''}" data-c="${c}">${CATS[c]} ${c}</button>`).join('')}</div>`}
@@ -94,17 +96,17 @@ const w=$('#qw');if(w)w.onchange=()=>{q.ward=w.value;list()};
 const o=$('#qo');if(o){o.value=q.sort;o.onchange=()=>{q.sort=o.value;list()}}
 document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{q.cat=b.dataset.c;document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===b));list()})}
 function list(){const el=$('#list');if(!el)return;const t=q.s.toLowerCase();
-if(view==='shops'){let a=db.shops.filter(s=>(!q.cat||s.cat==q.cat)&&(!q.ward||s.ward==q.ward)&&(!t||[s.name,s.owner,s.addr,s.desc].join(' ').toLowerCase().includes(t)));
+if(view==='shops'){let a=db.shops.filter(s=>(!q.cat||s.cat==q.cat)&&(!q.ward||s.ward==q.ward)&&(!t||[s.name,s.owner,s.addr,s.desc,...db.products.filter(p=>p.shopId==s.id).map(p=>p.name)].join(' ').toLowerCase().includes(t)));
 a.sort((x,y)=>q.sort=='name'?x.name.localeCompare(y.name,'vi'):y.rating-x.rating);
 el.innerHTML=a.length?a.map(s=>`<div class="card click" onclick="detail('${s.id}')"><div class="ava">${CATS[s.cat]||'📦'}</div><h3>${esc(s.name)}</h3>
 <div><span class="tag">${esc(s.cat)}</span><span class="tag">⭐ ${esc(s.rating)}</span></div><div class="mu">👤 ${esc(s.owner)}</div><div class="mu">📍 ${esc(s.addr)}, ${esc(s.ward)}</div><div class="mu">🕒 ${esc(s.hours)}</div>
-<div class="mu">${db.products.filter(p=>p.shopId==s.id).length} mặt hàng</div></div>`).join(''):'<div class="empty">Không tìm thấy hộ kinh doanh phù hợp.</div>'}
+<div class="mu">${db.products.filter(p=>p.shopId==s.id).length} mặt hàng</div>${t?(()=>{const m=db.products.filter(p=>p.shopId==s.id&&p.name.toLowerCase().includes(t));return m.length?`<div class="mu ok">🔎 Có bán: ${m.slice(0,3).map(p=>esc(p.name)).join(', ')}</div>`:''})():''}</div>`).join(''):'<div class="empty">Không tìm thấy hộ kinh doanh phù hợp.</div>'}
 else{let a=db.products.filter(p=>(!q.cat||p.cat==q.cat)&&(!t||[p.name,p.desc,shop(p.shopId)?.name].join(' ').toLowerCase().includes(t)));
 a.sort((x,y)=>q.sort=='pa'?x.price-y.price:q.sort=='pd'?y.price-x.price:x.name.localeCompare(y.name,'vi'));
-el.innerHTML=a.length?a.map(p=>{const s=shop(p.shopId)||{};return `<div class="card"><div class="ava">${CATS[p.cat]||'📦'}</div><h3>${esc(p.name)}</h3>
+el.innerHTML=a.length?a.map(p=>{const s=shop(p.shopId)||{};return `<div class="card">${p.img?`<img class="pimg" src="${p.img}" alt="${esc(p.name)}" loading="lazy">`:`<div class="ava">${CATS[p.cat]||'📦'}</div>`}<h3>${esc(p.name)}</h3>
 <div class="price">${money(p.price)}<span class="mu"> / ${esc(p.unit)}</span></div><div class="${p.stock>0?'ok':'no'}">${p.stock>0?'Còn hàng ('+p.stock+')':'Hết hàng'}</div>
 <div class="mu">${esc(p.desc)}</div><div class="mu">🏪 <a href="#" onclick="detail('${s.id}');return false" style="color:inherit">${esc(s.name)}</a></div>
-${s.phone?`<div class="row"><a class="btn sm g" href="tel:${esc(s.phone)}">📞 Gọi</a><a class="btn sm s" target="_blank" href="https://zalo.me/${esc(s.phone)}">Zalo</a></div>`:''}</div>`}).join(''):'<div class="empty">Không tìm thấy mặt hàng phù hợp.</div>'}}
+${s.phone?`<div class="row"><a class="btn sm g" href="tel:${esc(s.phone)}">📞 Gọi</a><a class="btn sm zalo" target="_blank" rel="noopener" href="${zUrl(s)}">💬 Zalo</a></div>`:''}</div>`}).join(''):'<div class="empty">Không tìm thấy mặt hàng phù hợp.</div>'}}
 function render(){document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===view));const A=$('#app');
 if(view==='manage')return manage(A);
 const hero=view==='shops'?`<div class="hero"><h1>Nhân dân mua sắm</h1><p>Khám phá hộ kinh doanh và hàng hóa quanh bạn, mua trực tiếp, giá minh bạch.</p>
@@ -114,22 +116,22 @@ function detail(id){const s=shop(id);if(!s)return;const ps=db.products.filter(p=
 $('#dlg').innerHTML=`<div class="row" style="justify-content:space-between"><div class="ava">${CATS[s.cat]||'📦'}</div><button class="btn s sm" onclick="dlg.close()">✕ Đóng</button></div>
 <h2 style="margin:8px 0">${esc(s.name)}</h2><div><span class="tag">${esc(s.cat)}</span><span class="tag">⭐ ${esc(s.rating)}</span></div>
 <p>${esc(s.desc)}</p><div class="mu">👤 Chủ hộ: ${esc(s.owner)}<br>📍 ${esc(s.addr)}, ${esc(s.ward)}<br>🕒 ${esc(s.hours)}<br>🧾 MST/ĐKKD: ${esc(s.mst||'Đang cập nhật')}</div>
-<div class="row" style="margin:12px 0"><a class="btn g" href="tel:${esc(s.phone)}">📞 ${esc(s.phone)}</a><a class="btn s" target="_blank" href="https://zalo.me/${esc(s.phone)}">Chat Zalo</a><a class="btn s" target="_blank" href="https://www.google.com/maps/search/${encodeURIComponent(s.addr+' '+s.ward)}">Bản đồ</a></div>
-<b>Mặt hàng (${ps.length})</b>${ps.map(p=>`<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--bd);padding:8px 0"><span>${esc(p.name)}<br><small class="${p.stock>0?'ok':'no'}">${p.stock>0?'Còn hàng':'Hết hàng'}</small></span><span class="price">${money(p.price)}/${esc(p.unit)}</span></div>`).join('')||'<div class="mu">Chưa có mặt hàng.</div>'}`;
+<div class="row" style="margin:12px 0"><a class="btn g" href="tel:${esc(s.phone)}">📞 ${esc(s.phone)}</a><a class="btn zalo" target="_blank" rel="noopener" href="${zUrl(s)}">💬 Chat Zalo</a><button class="btn s" onclick="cp('${esc(s.zalo||s.phone)}')">Sao chép số Zalo</button><a class="btn s" target="_blank" href="https://www.google.com/maps/search/${encodeURIComponent(s.addr+' '+s.ward)}">Bản đồ</a></div>
+<b>Mặt hàng (${ps.length})</b>${ps.map(p=>`<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--bd);padding:8px 0"><span style="display:flex;gap:10px;align-items:center">${p.img?`<img class="thumb" src="${p.img}" alt="">`:''}<span>${esc(p.name)}<br><small class="${p.stock>0?'ok':'no'}">${p.stock>0?'Còn hàng':'Hết hàng'}</small></span></span><span class="price">${money(p.price)}/${esc(p.unit)}</span></div>`).join('')||'<div class="mu">Chưa có mặt hàng.</div>'}`;
 $('#dlg').showModal()}
 function manage(A){A.innerHTML=`<h2>Quản lý dữ liệu</h2><div class="row"><button class="btn" onclick="openForm('shop')">+ Hộ kinh doanh</button><button class="btn" onclick="openForm('product')">+ Mặt hàng</button>
 <button class="btn s" onclick="exp()">⬇ Xuất JSON</button><button class="btn s" onclick="csv()">⬇ Xuất CSV mặt hàng</button><label class="btn s">⬆ Nhập JSON<input type="file" accept=".json" hidden onchange="imp(this)"></label><button class="btn s" onclick="ask('Khôi phục dữ liệu mẫu? Dữ liệu hiện tại sẽ mất.',()=>{db=seed();save();render()})">Khôi phục mẫu</button></div>
 <h2>Hộ kinh doanh (${db.shops.length})</h2><div class="tw"><table><tr><th>Tên</th><th>Chủ hộ</th><th>Ngành</th><th>Khu vực</th><th>SĐT</th><th></th></tr>
 ${db.shops.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(s.owner)}</td><td>${esc(s.cat)}</td><td>${esc(s.ward)}</td><td>${esc(s.phone)}</td><td><button class="btn s sm" onclick="openForm('shop','${s.id}')">Sửa</button> <button class="btn s sm" onclick="del('shops','${s.id}')">Xóa</button></td></tr>`).join('')}</table></div>
 <h2>Mặt hàng (${db.products.length})</h2><div class="tw"><table><tr><th>Tên</th><th>Cửa hàng</th><th>Giá</th><th>Tồn</th><th></th></tr>
-${db.products.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(shop(p.shopId)?.name||'-')}</td><td>${money(p.price)}/${esc(p.unit)}</td><td>${esc(p.stock)}</td><td><button class="btn s sm" onclick="openForm('product','${p.id}')">Sửa</button> <button class="btn s sm" onclick="del('products','${p.id}')">Xóa</button></td></tr>`).join('')}</table></div>
+${db.products.map(p=>`<tr><td>${p.img?`<img class="thumb" src="${p.img}" alt=""> `:''}${esc(p.name)}</td><td>${esc(shop(p.shopId)?.name||'-')}</td><td>${money(p.price)}/${esc(p.unit)}</td><td>${esc(p.stock)}</td><td><button class="btn s sm" onclick="openForm('product','${p.id}')">Sửa</button> <button class="btn s sm" onclick="del('products','${p.id}')">Xóa</button></td></tr>`).join('')}</table></div>
 <div class="mu">Dữ liệu được lưu trên trình duyệt của bạn. Dùng "Xuất JSON" để sao lưu.</div>`}
 const opt=(a,v)=>a.map(x=>`<option ${x==v?'selected':''}>${esc(x)}</option>`).join('');
 function openForm(type,id){const isS=type==='shop';const d=(isS?db.shops:db.products).find(x=>x.id==id)||{};const C=Object.keys(CATS);
-const F=isS?[['name','Tên hộ kinh doanh','w'],['owner','Chủ hộ'],['phone','Số điện thoại'],['cat','Ngành hàng','sel'],['ward','Khu vực (phường/xã)'],['addr','Địa chỉ','w'],['hours','Giờ mở cửa'],['mst','MST/Số ĐKKD'],['rating','Đánh giá (1-5)','n'],['desc','Giới thiệu','t']]
-:[['name','Tên mặt hàng','w'],['shopId','Hộ kinh doanh','shop'],['cat','Nhóm hàng','sel'],['price','Giá (đ)','n'],['unit','Đơn vị'],['stock','Tồn kho','n'],['desc','Mô tả','t']];
-$('#dlg').innerHTML=`<h2 style="margin-top:0">${id?'Sửa':'Thêm'} ${isS?'hộ kinh doanh':'mặt hàng'}</h2><div class="f">${F.map(([k,l,t])=>{const v=d[k]??'';const w=(t=='w'||t=='t')?'w':'';
-return `<div class="${w}"><label>${l}</label>${t=='sel'?`<select name="${k}">${opt(C,v)}</select>`:t=='shop'?`<select name="${k}">${db.shops.map(s=>`<option value="${s.id}" ${s.id==v?'selected':''}>${esc(s.name)}</option>`).join('')}</select>`:t=='t'?`<textarea name="${k}" rows="3">${esc(v)}</textarea>`:`<input name="${k}" type="${t=='n'?'number':'text'}" step="any" value="${esc(v)}">`}</div>`}).join('')}</div>
+const F=isS?[['name','Tên hộ kinh doanh','w'],['owner','Chủ hộ'],['phone','Số điện thoại'],['zalo','Số Zalo (nếu khác SĐT)'],['cat','Ngành hàng','sel'],['ward','Khu vực (phường/xã)'],['addr','Địa chỉ','w'],['hours','Giờ mở cửa'],['mst','MST/Số ĐKKD'],['rating','Đánh giá (1-5)','n'],['desc','Giới thiệu','t']]
+:[['name','Tên mặt hàng','w'],['shopId','Hộ kinh doanh','shop'],['cat','Nhóm hàng','sel'],['price','Giá (đ)','n'],['unit','Đơn vị'],['stock','Tồn kho','n'],['img','Hình ảnh','img'],['desc','Mô tả','t']];
+$('#dlg').innerHTML=`<h2 style="margin-top:0">${id?'Sửa':'Thêm'} ${isS?'hộ kinh doanh':'mặt hàng'}</h2><div class="f">${F.map(([k,l,t])=>{const v=d[k]??'';const w=(t=='w'||t=='t'||t=='img')?'w':'';
+return `<div class="${w}"><label>${l}</label>${t=='img'?`<div class="row"><img id="ipv" class="thumb" style="width:72px;height:72px;${v?'':'display:none'}" src="${esc(v)}" alt=""><label class="btn s sm">📷 Chọn ảnh<input type="file" accept="image/*" hidden onchange="pickImg(this)"></label><button type="button" class="btn s sm" onclick="clrImg()">Xóa ảnh</button><span class="mu" id="isz"></span></div><input type="hidden" name="img" value="${esc(v)}">`:t=='sel'?`<select name="${k}">${opt(C,v)}</select>`:t=='shop'?`<select name="${k}">${db.shops.map(s=>`<option value="${s.id}" ${s.id==v?'selected':''}>${esc(s.name)}</option>`).join('')}</select>`:t=='t'?`<textarea name="${k}" rows="3">${esc(v)}</textarea>`:`<input name="${k}" type="${t=='n'?'number':'text'}" step="any" value="${esc(v)}">`}</div>`}).join('')}</div>
 <div class="row" style="margin-top:14px"><button class="btn" id="sv">Lưu</button><button class="btn s" onclick="dlg.close()">Hủy</button></div>`;
 $('#sv').onclick=()=>{const o={...d};$('#dlg').querySelectorAll('[name]').forEach(e=>o[e.name]=e.type=='number'?+e.value:e.value.trim());
 if(!o.name)return toast('Vui lòng nhập tên.');if(isS&&!o.phone)return toast('Vui lòng nhập số điện thoại.');if(!isS&&!db.shops.length)return toast('Hãy thêm hộ kinh doanh trước.');
@@ -142,5 +144,9 @@ function csv(){const r=[['Tên','Cửa hàng','Nhóm','Giá','Đơn vị','Tồn
 dl('mat-hang.csv','\ufeff'+r.map(x=>x.map(c=>'"'+String(c??'').replace(/"/g,'""')+'"').join(',')).join('\n'),'text/csv')}
 function imp(i){const f=i.files[0];if(!f)return;f.text().then(t=>{try{const j=JSON.parse(t);if(!Array.isArray(j.shops)||!Array.isArray(j.products))throw 0;db=j;save();render()}catch(e){toast('File JSON không hợp lệ.')}})}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{view=b.dataset.v;q.cat='';q.s='';q.ward='';q.sort=view=='shops'?'rating':'name';render();scrollTo(0,0)});
+function compress(file,max=640,q=.72){return new Promise((res,rej)=>{const r=new FileReader();r.onerror=rej;r.onload=()=>{const im=new Image();im.onerror=rej;im.onload=()=>{let w=im.width,h=im.height;const k=Math.min(1,max/Math.max(w,h));w=Math.round(w*k);h=Math.round(h*k);const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,w,h);x.drawImage(im,0,0,w,h);let d=c.toDataURL('image/jpeg',q);if(d.length>150000)d=c.toDataURL('image/jpeg',.5);res(d)};im.src=r.result};r.readAsDataURL(file)})}
+async function pickImg(i){const f=i.files[0];if(!f)return;try{const d=await compress(f);$('[name=img]').value=d;const p=$('#ipv');p.src=d;p.style.display='';$('#isz').textContent='Đã nén: '+Math.round(d.length*.75/1024)+' KB (gốc '+Math.round(f.size/1024)+' KB)'}catch(e){toast('Không đọc được ảnh này.')}}
+async function cp(n){try{await navigator.clipboard.writeText(n);toast('Đã sao chép: '+n)}catch(e){toast('Số Zalo: '+n)}}
+function clrImg(){$('[name=img]').value='';const p=$('#ipv');p.removeAttribute('src');p.style.display='none';$('#isz').textContent=''}
 const dlg=$('#dlg');render();
 </script></body></html>
