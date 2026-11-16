@@ -39,12 +39,16 @@ dialog::backdrop{background:rgba(0,0,0,.5)}
 .tw{overflow-x:auto;background:var(--card);border:1px solid var(--bd);border-radius:14px;margin-bottom:18px}
 table{border-collapse:collapse;width:100%;font-size:14px}th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--bd);white-space:nowrap}th{color:var(--mu);font-weight:600}
 .empty{text-align:center;color:var(--mu);padding:40px}h2{margin:18px 0 10px}
+html{-webkit-text-size-adjust:100%}button,a{touch-action:manipulation}input,select,textarea{font-size:16px}dialog{max-height:88vh;max-height:88dvh;overflow:auto}
+@media(max-width:900px){main{padding:12px}.grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}}
+@media(max-width:640px){header{padding:8px 12px;gap:8px}.logo{font-size:16px}nav{margin-left:0;width:100%;overflow-x:auto}nav button{flex:1;padding:8px 6px;font-size:13px;white-space:nowrap}.hero{padding:20px 16px;border-radius:16px}.stat{flex:1 1 90px;padding:8px 12px}.stat b{font-size:19px}.grid{grid-template-columns:1fr 1fr;gap:10px}.card{padding:12px}.f{grid-template-columns:1fr}dialog{padding:16px;width:calc(100% - 16px)}.row .btn{flex:1 1 auto;text-align:center}th,td{padding:8px 10px}}
+@media(max-width:420px){.grid{grid-template-columns:1fr}}
 footer{text-align:center;color:var(--mu);font-size:13px;padding:24px}
 </style></head><body>
 <header><div class="logo">🛍️<div>Nhân dân mua sắm<small>Kết nối hộ kinh doanh với người tiêu dùng</small></div></div>
 <nav><button data-v="shops" class="on">Hộ kinh doanh</button><button data-v="products">Mặt hàng</button><button data-v="manage">Quản lý dữ liệu</button></nav></header>
 <main id="app"></main>
-<footer>Nhân dân mua sắm · Ưu tiên hàng Việt, ủng hộ hộ kinh doanh địa phương</footer>
+<footer>Nhân dân mua sắm · Ưu tiên hàng Việt, ủng hộ hộ kinh doanh địa phương.<br>Thiết kế và Phát triển bởi <b>TEAM HTC</b>.</footer>
 <dialog id="dlg"></dialog>
 <script>
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
