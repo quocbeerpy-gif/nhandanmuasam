@@ -29,7 +29,7 @@ input,select,textarea{font:inherit;color:var(--tx);background:var(--card);border
 .ava{width:48px;height:48px;border-radius:14px;background:var(--sf);display:grid;place-items:center;font-size:26px}
 .card h3{margin:2px 0 0;font-size:16px}.mu{color:var(--mu);font-size:13px}
 .tag{display:inline-block;background:var(--sf);border-radius:8px;padding:2px 8px;font-size:12px;margin-right:4px}
-.price{color:var(--pr);font-weight:800;font-size:17px}.ok{color:var(--ac)}.no{color:var(--pr)}
+.price{color:var(--pr);font-weight:800;font-size:17px;white-space:nowrap}.ok{color:var(--ac)}.no{color:var(--pr)}
 .btn{border:0;background:var(--pr);color:#fff;padding:9px 16px;border-radius:12px;font:inherit;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block}
 .btn.s{background:var(--card);color:var(--tx);border:1px solid var(--bd)}.btn.g{background:var(--ac)}.btn.sm{padding:5px 10px;font-size:13px}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -102,7 +102,7 @@ $('#dlg').innerHTML=`<div class="row" style="justify-content:space-between"><div
 <h2 style="margin:8px 0">${esc(s.name)}</h2><div><span class="tag">${esc(s.cat)}</span>${s.rating>0?`<span class="tag">⭐ ${esc(s.rating)}</span>`:''}</div>
 <p>${esc(s.desc)}</p><div class="mu">${s.owner?`👤 Chủ hộ: ${esc(s.owner)}<br>`:''}📍 ${esc(adr(s))}<br>${s.hours?`🕒 ${esc(s.hours)}<br>`:''}🧾 MST/ĐKKD: ${esc(s.mst||'Đang cập nhật')}</div>
 <div class="row" style="margin:12px 0">${s.phone?`<a class="btn g" href="tel:${esc(s.phone)}">📞 ${esc(s.phone)}</a>`:''}${(s.zalo||s.phone)?`<a class="btn zalo" target="_blank" rel="noopener" href="${zUrl(s)}">💬 Chat Zalo</a><button class="btn s" onclick="cp('${esc(s.zalo||s.phone)}')">Sao chép số Zalo</button>`:''}<a class="btn s" target="_blank" href="https://www.google.com/maps/search/${encodeURIComponent(adr(s))}">Bản đồ</a></div>
-<b>Mặt hàng (${ps.length})</b>${ps.map(p=>`<div class="row" onclick="pdetail('${p.id}')" style="cursor:pointer;justify-content:space-between;border-bottom:1px solid var(--bd);padding:8px 0"><span style="display:flex;gap:10px;align-items:center">${p.img?`<img class="thumb" src="${p.img}" alt="">`:''}<span>${esc(p.name)}<br><small class="${p.stock>0?'ok':'no'}">${p.desc?`<br><small class="mu">${esc(p.desc)}</small>`:''}</span></span><span class="price">${money(p.price)}/${esc(p.unit)}</span></div>`).join('')||'<div class="mu">Chưa có mặt hàng.</div>'}`;
+<b>Mặt hàng (${ps.length})</b>${ps.map(p=>`<div class="row" onclick="pdetail('${p.id}')" style="cursor:pointer;flex-wrap:nowrap;justify-content:space-between;align-items:flex-start;gap:12px;border-bottom:1px solid var(--bd);padding:8px 0"><span style="display:flex;gap:10px;align-items:center;flex:1;min-width:0">${p.img?`<img class="thumb" src="${p.img}" alt="">`:''}<span>${esc(p.name)}<br><small class="${p.stock>0?'ok':'no'}">${p.stock>0?'Còn hàng':'Hết hàng'}</small>${p.desc?`<br><small class="mu">${esc(p.desc)}</small>`:''}</span></span><span class="price" style="flex:none">${money(p.price)}/${esc(p.unit)}</span></div>`).join('')||'<div class="mu">Chưa có mặt hàng.</div>'}`;
 $('#dlg').showModal()}
 function pdetail(id){const p=db.products.find(x=>x.id==id);if(!p)return;const s=shop(p.shopId)||{};
 $('#dlg').innerHTML=`<div class="row" style="justify-content:space-between"><button class="btn s sm" onclick="detail('${s.id}')">← Cửa hàng</button><button class="btn s sm" onclick="dlg.close()">✕ Đóng</button></div>
