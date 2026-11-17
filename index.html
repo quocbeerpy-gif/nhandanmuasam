@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="vi"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Nhân dân mua sắm</title>
+<title>Hoà Xuân Shopping</title>
 <style>
 :root{--bg:#f6f7f4;--card:#fff;--tx:#1b2a22;--mu:#64746b;--bd:#e3e8e2;--pr:#c8102e;--pr2:#a30c24;--ac:#0f7a4d;--sf:#fdf0d5;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -46,10 +46,10 @@ html{-webkit-text-size-adjust:100%}button,a{touch-action:manipulation}input,sele
 @media(max-width:420px){.grid{grid-template-columns:1fr}}
 footer{text-align:center;color:var(--mu);font-size:13px;padding:24px}
 </style></head><body>
-<header><div class="logo">🛍️<div>Nhân dân mua sắm<small>Kết nối hộ kinh doanh với người tiêu dùng</small></div></div>
+<header><div class="logo">🛍️<div>Hoà Xuân Shopping<small>Kết nối hộ kinh doanh với người tiêu dùng</small></div></div>
 <nav><button data-v="shops" class="on">Hộ kinh doanh</button><button data-v="products">Mặt hàng</button><button data-v="manage">Quản lý dữ liệu</button></nav></header>
 <main id="app"></main>
-<footer>Nhân dân mua sắm · Ưu tiên hàng Việt, ủng hộ hộ kinh doanh địa phương.<br>Thiết kế và Phát triển bởi <b>TEAM HTC</b>.</footer>
+<footer>Hoà Xuân Shopping · Ưu tiên hàng Việt, ủng hộ hộ kinh doanh địa phương.<br>Thiết kế và Phát triển bởi <b>TEAM HTC</b>.<br><span id="st"></span></footer>
 <dialog id="dlg"></dialog>
 <script>
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -79,22 +79,25 @@ products:[
 {id:'p13',shopId:'s6',name:'Bình hoa gốm men rạn',cat:'Thủ công mỹ nghệ',price:350000,unit:'cái',stock:6,desc:'Làm thủ công.'},
 {id:'p14',shopId:'s6',name:'Bộ ấm trà gốm',cat:'Thủ công mỹ nghệ',price:520000,unit:'bộ',stock:4,desc:''}]});
 let db;try{db=JSON.parse(localStorage.getItem(KEY))}catch(e){}if(!db||!db.shops)db=seed();
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){toast('Bộ nhớ trình duyệt đã đầy, hãy xóa bớt ảnh hoặc xuất JSON để sao lưu.')}};
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){toast('Bộ nhớ trình duyệt đã đầy, hãy xóa bớt ảnh hoặc xuất JSON để sao lưu.')}cloudSync()};
 const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 let view='shops',q={s:'',cat:'',ward:'',sort:'rating'};
 const shop=id=>db.shops.find(s=>s.id==id);
 const zl=s=>{let n=String(s.zalo||s.phone||'').replace(/\D/g,'');if(n.startsWith('0'))n='84'+n.slice(1);return n};const zUrl=s=>'https://zalo.me/'+zl(s);
+const dataCats=()=>{const m={};(view==='shops'?db.shops:db.products).forEach(x=>{if(x.cat)m[x.cat]=(m[x.cat]||0)+1});return Object.entries(m).sort((a,b)=>a[0].localeCompare(b[0],'vi'))};
+const catList=()=>[...new Set([...Object.keys(CATS),...db.shops.map(s=>s.cat),...db.products.map(p=>p.cat)].filter(Boolean))];
 const wards=()=>[...new Set(db.shops.map(s=>s.ward).filter(Boolean))].sort();
 const toast=m=>{const t=document.createElement('div');t.textContent=m;t.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1b2a22;color:#fff;padding:10px 18px;border-radius:12px;z-index:99';document.body.appendChild(t);setTimeout(()=>t.remove(),2500)};
 const ask=(m,fn)=>{const d=$('#dlg');d.innerHTML=`<p>${esc(m)}</p><div class="row"><button class="btn" id="yes">Đồng ý</button><button class="btn s" onclick="dlg.close()">Hủy</button></div>`;d.showModal();$('#yes').onclick=()=>{d.close();fn()}};
 function bar(kind){return `<div class="bar"><input id="qs" placeholder="🔍 Tìm ${kind==='shops'?'hộ kinh doanh, chủ hộ, địa chỉ, mặt hàng đang bán':'mặt hàng, cửa hàng'}..." value="${esc(q.s)}">
-${kind==='shops'?`<select id="qw"><option value="">Tất cả khu vực</option>${wards().map(w=>`<option ${q.ward==w?'selected':''}>${esc(w)}</option>`).join('')}</select>`:''}
+<select id="qc"><option value="">Tất cả ngành hàng</option>${dataCats().map(([c,n])=>`<option value="${esc(c)}" ${q.cat==c?'selected':''}>${esc(c)} (${n})</option>`).join('')}</select>${kind==='shops'?`<select id="qw"><option value="">Tất cả khu vực</option>${wards().map(w=>`<option ${q.ward==w?'selected':''}>${esc(w)}</option>`).join('')}</select>`:''}
 <select id="qo">${kind==='shops'?`<option value="rating">Đánh giá cao</option><option value="name">Tên A-Z</option>`:`<option value="name">Tên A-Z</option><option value="pa">Giá tăng dần</option><option value="pd">Giá giảm dần</option>`}</select></div>
-<div class="chips"><button class="chip ${!q.cat?'on':''}" data-c="">Tất cả</button>${Object.keys(CATS).map(c=>`<button class="chip ${q.cat==c?'on':''}" data-c="${c}">${CATS[c]} ${c}</button>`).join('')}</div>`}
+<div class="chips"><button class="chip ${!q.cat?'on':''}" data-c="">Tất cả</button>${dataCats().map(([c,n])=>`<button class="chip ${q.cat==c?'on':''}" data-c="${esc(c)}">${CATS[c]||'🏷️'} ${esc(c)} (${n})</button>`).join('')}</div>`}
 function bind(){const i=$('#qs');if(i){i.oninput=()=>{q.s=i.value;list()};}
 const w=$('#qw');if(w)w.onchange=()=>{q.ward=w.value;list()};
 const o=$('#qo');if(o){o.value=q.sort;o.onchange=()=>{q.sort=o.value;list()}}
-document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{q.cat=b.dataset.c;document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===b));list()})}
+document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{q.cat=b.dataset.c;const c2=$('#qc');if(c2)c2.value=q.cat;document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===b));list()})
+const c1=$('#qc');if(c1)c1.onchange=()=>{q.cat=c1.value;document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.c===q.cat));list()}}
 function list(){const el=$('#list');if(!el)return;const t=q.s.toLowerCase();
 if(view==='shops'){let a=db.shops.filter(s=>(!q.cat||s.cat==q.cat)&&(!q.ward||s.ward==q.ward)&&(!t||[s.name,s.owner,s.addr,s.desc,...db.products.filter(p=>p.shopId==s.id).map(p=>p.name)].join(' ').toLowerCase().includes(t)));
 a.sort((x,y)=>q.sort=='name'?x.name.localeCompare(y.name,'vi'):y.rating-x.rating);
@@ -109,7 +112,7 @@ el.innerHTML=a.length?a.map(p=>{const s=shop(p.shopId)||{};return `<div class="c
 ${s.phone?`<div class="row"><a class="btn sm g" href="tel:${esc(s.phone)}">📞 Gọi</a><a class="btn sm zalo" target="_blank" rel="noopener" href="${zUrl(s)}">💬 Zalo</a></div>`:''}</div>`}).join(''):'<div class="empty">Không tìm thấy mặt hàng phù hợp.</div>'}}
 function render(){document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===view));const A=$('#app');
 if(view==='manage')return manage(A);
-const hero=view==='shops'?`<div class="hero"><h1>Nhân dân mua sắm</h1><p>Khám phá hộ kinh doanh và hàng hóa quanh bạn, mua trực tiếp, giá minh bạch.</p>
+const hero=view==='shops'?`<div class="hero"><h1>Hoà Xuân Shopping</h1><p>Khám phá hộ kinh doanh và hàng hóa quanh bạn, mua trực tiếp, giá minh bạch.</p>
 <div class="stats"><div class="stat"><b>${db.shops.length}</b>Hộ kinh doanh</div><div class="stat"><b>${db.products.length}</b>Mặt hàng</div><div class="stat"><b>${new Set(db.shops.map(s=>s.cat)).size}</b>Ngành hàng</div></div></div>`:'';
 A.innerHTML=hero+bar(view)+'<div class="grid" id="list"></div>';bind();list()}
 function detail(id){const s=shop(id);if(!s)return;const ps=db.products.filter(p=>p.shopId==id);
@@ -127,19 +130,19 @@ ${db.shops.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(s.owner)}</td><td>${esc(
 ${db.products.map(p=>`<tr><td>${p.img?`<img class="thumb" src="${p.img}" alt=""> `:''}${esc(p.name)}</td><td>${esc(shop(p.shopId)?.name||'-')}</td><td>${money(p.price)}/${esc(p.unit)}</td><td>${esc(p.stock)}</td><td><button class="btn s sm" onclick="openForm('product','${p.id}')">Sửa</button> <button class="btn s sm" onclick="del('products','${p.id}')">Xóa</button></td></tr>`).join('')}</table></div>
 <div class="mu">Dữ liệu được lưu trên trình duyệt của bạn. Dùng "Xuất JSON" để sao lưu.</div>`}
 const opt=(a,v)=>a.map(x=>`<option ${x==v?'selected':''}>${esc(x)}</option>`).join('');
-function openForm(type,id){const isS=type==='shop';const d=(isS?db.shops:db.products).find(x=>x.id==id)||{};const C=Object.keys(CATS);
+function openForm(type,id){const isS=type==='shop';const d=(isS?db.shops:db.products).find(x=>x.id==id)||{};const C=catList();
 const F=isS?[['name','Tên hộ kinh doanh','w'],['owner','Chủ hộ'],['phone','Số điện thoại'],['zalo','Số Zalo (nếu khác SĐT)'],['cat','Ngành hàng','sel'],['ward','Khu vực (phường/xã)'],['addr','Địa chỉ','w'],['hours','Giờ mở cửa'],['mst','MST/Số ĐKKD'],['rating','Đánh giá (1-5)','n'],['desc','Giới thiệu','t']]
 :[['name','Tên mặt hàng','w'],['shopId','Hộ kinh doanh','shop'],['cat','Nhóm hàng','sel'],['price','Giá (đ)','n'],['unit','Đơn vị'],['stock','Tồn kho','n'],['img','Hình ảnh','img'],['desc','Mô tả','t']];
 $('#dlg').innerHTML=`<h2 style="margin-top:0">${id?'Sửa':'Thêm'} ${isS?'hộ kinh doanh':'mặt hàng'}</h2><div class="f">${F.map(([k,l,t])=>{const v=d[k]??'';const w=(t=='w'||t=='t'||t=='img')?'w':'';
-return `<div class="${w}"><label>${l}</label>${t=='img'?`<div class="row"><img id="ipv" class="thumb" style="width:72px;height:72px;${v?'':'display:none'}" src="${esc(v)}" alt=""><label class="btn s sm">📷 Chọn ảnh<input type="file" accept="image/*" hidden onchange="pickImg(this)"></label><button type="button" class="btn s sm" onclick="clrImg()">Xóa ảnh</button><span class="mu" id="isz"></span></div><input type="hidden" name="img" value="${esc(v)}">`:t=='sel'?`<select name="${k}">${opt(C,v)}</select>`:t=='shop'?`<select name="${k}">${db.shops.map(s=>`<option value="${s.id}" ${s.id==v?'selected':''}>${esc(s.name)}</option>`).join('')}</select>`:t=='t'?`<textarea name="${k}" rows="3">${esc(v)}</textarea>`:`<input name="${k}" type="${t=='n'?'number':'text'}" step="any" value="${esc(v)}">`}</div>`}).join('')}</div>
+return `<div class="${w}"><label>${l}</label>${t=='img'?`<div class="row"><img id="ipv" class="thumb" style="width:72px;height:72px;${v?'':'display:none'}" src="${esc(v)}" alt=""><label class="btn s sm">📷 Chọn ảnh<input type="file" accept="image/*" hidden onchange="pickImg(this)"></label><button type="button" class="btn s sm" onclick="clrImg()">Xóa ảnh</button><span class="mu" id="isz"></span></div><input type="hidden" name="img" value="${esc(v)}">`:t=='sel'?`<input name="${k}" list="cl" value="${esc(v)}" placeholder="Chọn hoặc nhập ngành mới"><datalist id="cl">${C.map(c=>`<option value="${esc(c)}">`).join('')}</datalist>`:t=='shop'?`<select name="${k}">${db.shops.map(s=>`<option value="${s.id}" ${s.id==v?'selected':''}>${esc(s.name)}</option>`).join('')}</select>`:t=='t'?`<textarea name="${k}" rows="3">${esc(v)}</textarea>`:`<input name="${k}" type="${t=='n'?'number':'text'}" step="any" value="${esc(v)}">`}</div>`}).join('')}</div>
 <div class="row" style="margin-top:14px"><button class="btn" id="sv">Lưu</button><button class="btn s" onclick="dlg.close()">Hủy</button></div>`;
 $('#sv').onclick=()=>{const o={...d};$('#dlg').querySelectorAll('[name]').forEach(e=>o[e.name]=e.type=='number'?+e.value:e.value.trim());
 if(!o.name)return toast('Vui lòng nhập tên.');if(isS&&!o.phone)return toast('Vui lòng nhập số điện thoại.');if(!isS&&!db.shops.length)return toast('Hãy thêm hộ kinh doanh trước.');
-if(isS&&o.rating==null)o.rating=5;if(isS&&!(o.rating>=1&&o.rating<=5))o.rating=5;
+if(!o.cat)o.cat='Khác';if(isS&&o.rating==null)o.rating=5;if(isS&&!(o.rating>=1&&o.rating<=5))o.rating=5;
 const arr=isS?db.shops:db.products;if(d.id)arr[arr.findIndex(x=>x.id==d.id)]=o;else{o.id=uid(isS?'s':'p');arr.push(o)}save();dlg.close();render()};$('#dlg').showModal()}
 function del(k,id){ask('Xóa mục này?',()=>{db[k]=db[k].filter(x=>x.id!=id);if(k=='shops')db.products=db.products.filter(p=>p.shopId!=id);save();render()})}
 function dl(n,t,m){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:m}));a.download=n;a.click()}
-function exp(){dl('nhan-dan-mua-sam.json',JSON.stringify(db,null,1),'application/json')}
+function exp(){dl('hoa-xuan-shopping.json',JSON.stringify(db,null,1),'application/json')}
 function csv(){const r=[['Tên','Cửa hàng','Nhóm','Giá','Đơn vị','Tồn','Mô tả'],...db.products.map(p=>[p.name,shop(p.shopId)?.name,p.cat,p.price,p.unit,p.stock,p.desc])];
 dl('mat-hang.csv','\ufeff'+r.map(x=>x.map(c=>'"'+String(c??'').replace(/"/g,'""')+'"').join(',')).join('\n'),'text/csv')}
 function imp(i){const f=i.files[0];if(!f)return;f.text().then(t=>{try{const j=JSON.parse(t);if(!Array.isArray(j.shops)||!Array.isArray(j.products))throw 0;db=j;save();render()}catch(e){toast('File JSON không hợp lệ.')}})}
@@ -148,5 +151,26 @@ function compress(file,max=640,q=.72){return new Promise((res,rej)=>{const r=new
 async function pickImg(i){const f=i.files[0];if(!f)return;try{const d=await compress(f);$('[name=img]').value=d;const p=$('#ipv');p.src=d;p.style.display='';$('#isz').textContent='Đã nén: '+Math.round(d.length*.75/1024)+' KB (gốc '+Math.round(f.size/1024)+' KB)'}catch(e){toast('Không đọc được ảnh này.')}}
 async function cp(n){try{await navigator.clipboard.writeText(n);toast('Đã sao chép: '+n)}catch(e){toast('Số Zalo: '+n)}}
 function clrImg(){$('[name=img]').value='';const p=$('#ipv');p.removeAttribute('src');p.style.display='none';$('#isz').textContent=''}
-const dlg=$('#dlg');render();
+const FBCFG={apiKey:"AIzaSyDPQtekTRqutOm0hCEf-roeZBA8c3qrSJg",authDomain:"muasam-7a56c.firebaseapp.com",projectId:"muasam-7a56c",storageBucket:"muasam-7a56c.firebasestorage.app",messagingSenderId:"964011191311",appId:"1:964011191311:web:c56c08e6eac62121b9877a",measurementId:"G-N46LGK8HM6"};
+let fs=null;const cloud={shops:{},products:{}};
+const js=o=>JSON.stringify(o,Object.keys(o).sort());
+const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}};
+const setSt=(k,e)=>{const el=$('#st');if(el)el.textContent=k==='ok'?'☁️ Đã kết nối Firebase · dữ liệu đồng bộ trực tuyến':k==='err'?'⚠️ Chưa kết nối được Firebase, đang lưu trên máy ('+((e&&(e.code||e.message))||'không rõ')+')':'💾 Đang kết nối Firebase...'};
+function cloudSync(){if(!fs)return;['shops','products'].forEach(c=>{const cur={};db[c].forEach(x=>cur[x.id]=js(x));
+for(const id in cur)if(cloud[c][id]!==cur[id]){cloud[c][id]=cur[id];fs.collection(c).doc(id).set(JSON.parse(cur[id])).catch(e=>setSt('err',e))}
+for(const id in cloud[c])if(!(id in cur)){delete cloud[c][id];fs.collection(c).doc(id).delete().catch(e=>setSt('err',e))}})}
+const adopt=(c,s)=>{db[c]=s.docs.map(d=>d.data());cloud[c]={};db[c].forEach(x=>cloud[c][x.id]=js(x))};
+const loadJS=u=>new Promise((ok,no)=>{const s=document.createElement('script');s.src=u;s.onload=ok;s.onerror=no;document.head.appendChild(s)});
+const tmo=(p,ms)=>Promise.race([p,new Promise((_,no)=>setTimeout(()=>no({message:'hết thời gian chờ'}),ms))]);
+async function initFB(){setSt('wait');let f=null;try{
+const V='10.12.2',B=['https://cdn.jsdelivr.net/npm/firebase@'+V+'/','https://www.gstatic.com/firebasejs/'+V+'/'];let okL=false;
+for(const b of B){try{await loadJS(b+'firebase-app-compat.js');await loadJS(b+'firebase-firestore-compat.js');okL=true;break}catch(e){}}
+if(!okL)throw{message:'không tải được thư viện Firebase'};
+firebase.initializeApp(FBCFG);f=firebase.firestore();f.settings({experimentalAutoDetectLongPolling:true,merge:true});
+const [a,b2]=await tmo(Promise.all([f.collection('shops').get(),f.collection('products').get()]),9000);
+fs=f;
+if(a.empty&&b2.empty){cloudSync()}else{adopt('shops',a);adopt('products',b2);persist();render()}
+['shops','products'].forEach(c=>f.collection(c).onSnapshot(s=>{if(s.metadata.hasPendingWrites)return;adopt(c,s);persist();const ae=document.activeElement;if(!$('#dlg').open&&!(ae&&ae.id==='qs'))render()},e=>setSt('err',e)));
+setSt('ok')}catch(e){try{f&&f.terminate()}catch(_){}fs=null;setSt('err',e)}}
+const dlg=$('#dlg');render();initFB();
 </script></body></html>
