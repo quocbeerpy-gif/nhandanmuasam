@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="vi"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Hoà Xuân Shopping</title>
+<title>Hòa Xuân Shopping</title>
 <style>
 :root{--bg:#f6f7f4;--card:#fff;--tx:#1b2a22;--mu:#64746b;--bd:#e3e8e2;--pr:#c8102e;--pr2:#a30c24;--ac:#0f7a4d;--sf:#fdf0d5;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -47,11 +47,11 @@ html{-webkit-text-size-adjust:100%}button,a{touch-action:manipulation}input,sele
 @media(max-width:420px){.grid{grid-template-columns:1fr}}
 footer{text-align:center;color:var(--mu);font-size:13px;padding:24px}
 </style></head><body>
-<header><div class="logo">🛍️<div>Hoà Xuân Shopping<small>Kết nối hộ kinh doanh với người tiêu dùng</small></div></div>
+<header><div class="logo">🛍️<div>Hòa Xuân Shopping<small>Kết nối hộ kinh doanh với người tiêu dùng</small></div></div>
 <a class="hot" href="tel:0905011933">📞 Hotline: 0905 011 933</a>
 <nav><button data-v="shops" class="on">Hộ kinh doanh</button><button data-v="products">Mặt hàng</button><button data-v="manage">Quản lý dữ liệu</button></nav></header>
 <main id="app"></main>
-<footer>Hoà Xuân Shopping · Ưu tiên hàng Việt, ủng hộ hộ kinh doanh địa phương.<br>Thiết kế và Phát triển bởi <b>TEAM HTC</b>.<div>📞 Hotline hỗ trợ: <a href="tel:0905011933" style="color:var(--pr);font-weight:700;text-decoration:none">0905 011 933</a></div><div style="margin-top:10px"><span id="vc" class="vc" hidden></span></div><span id="st"></span></footer>
+<footer>Hòa Xuân Shopping · Ưu tiên hàng Việt, ủng hộ hộ kinh doanh địa phương.<br>Thiết kế và Phát triển bởi <b>TEAM HTC</b>.<div>📞 Hotline hỗ trợ: <a href="tel:0905011933" style="color:var(--pr);font-weight:700;text-decoration:none">0905 011 933</a></div><div style="margin-top:10px"><span id="vc" class="vc" hidden></span></div><span id="st"></span></footer>
 <dialog id="dlg"></dialog>
 <script>
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -94,7 +94,7 @@ ${p.desc?`<div class="pd">${esc(p.desc)}</div>`:''}<div class="mu">🏪 <a href=
 ${s.phone?`<div class="row" onclick="event.stopPropagation()"><a class="btn sm g" href="tel:${esc(s.phone)}">📞 Gọi</a><a class="btn sm zalo" target="_blank" rel="noopener" href="${zUrl(s)}">💬 Zalo</a></div>`:''}</div>`}).join(''):'<div class="empty">Không tìm thấy mặt hàng phù hợp.</div>'}}
 function render(){document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===view));const A=$('#app');
 if(view==='manage')return manage(A);
-const hero=view==='shops'?`<div class="hero"><h1>Hoà Xuân Shopping</h1><p>Khám phá hộ kinh doanh và hàng hóa quanh bạn, mua trực tiếp, giá minh bạch.</p>
+const hero=view==='shops'?`<div class="hero"><h1>Hòa Xuân Shopping</h1><p>Khám phá hộ kinh doanh và hàng hóa quanh bạn, mua trực tiếp, giá minh bạch.</p>
 <div class="stats"><div class="stat"><b>${db.shops.length}</b>Hộ kinh doanh</div><div class="stat"><b>${db.products.length}</b>Mặt hàng</div><div class="stat"><b>${new Set(db.shops.map(s=>s.cat)).size}</b>Ngành hàng</div></div></div>`:'';
 A.innerHTML=hero+bar(view)+'<div class="grid" id="list"></div>';bind();list()}
 function detail(id){const s=shop(id);if(!s)return;const ps=db.products.filter(p=>p.shopId==id);
