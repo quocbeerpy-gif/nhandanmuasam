@@ -42,7 +42,7 @@ table{border-collapse:collapse;width:100%;font-size:14px}th,td{text-align:left;p
 html{-webkit-text-size-adjust:100%}button,a{touch-action:manipulation}input,select,textarea{font-size:16px}dialog{max-height:88vh;max-height:88dvh;overflow:auto}
 @media(max-width:900px){main{padding:12px}.grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}}
 @media(max-width:640px){header{padding:8px 12px;gap:8px}.logo{font-size:16px}nav{margin-left:0;width:100%;overflow-x:auto}nav button{flex:1;padding:8px 6px;font-size:13px;white-space:nowrap}.hero{padding:20px 16px;border-radius:16px}.stat{flex:1 1 90px;padding:8px 12px}.stat b{font-size:19px}.grid{grid-template-columns:1fr 1fr;gap:10px}.card{padding:12px}.f{grid-template-columns:1fr}dialog{padding:16px;width:calc(100% - 16px)}.row .btn{flex:1 1 auto;text-align:center}th,td{padding:8px 10px}}
-.zalo{background:#0068ff!important;color:#fff!important;border:0!important}.pimg{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:12px;background:var(--sf)}.thumb{width:40px;height:40px;object-fit:cover;border-radius:8px;vertical-align:middle;flex:none}
+.btn{position:relative;overflow:hidden;background:linear-gradient(135deg,var(--pr),var(--pr2));box-shadow:0 4px 12px rgba(200,16,46,.28);transition:transform .15s,box-shadow .2s,filter .2s}.btn:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(200,16,46,.36);filter:brightness(1.06)}.btn:active{transform:translateY(0) scale(.96);box-shadow:0 2px 6px rgba(0,0,0,.2)}.btn.s{background:var(--card);box-shadow:none}.btn.s:hover{border-color:var(--pr);color:var(--pr);box-shadow:0 4px 12px rgba(0,0,0,.08)}.btn.g{background:linear-gradient(135deg,#12a066,var(--ac));box-shadow:0 4px 12px rgba(15,122,77,.3)}.zalo{background:linear-gradient(135deg,#2a8bff,#0068ff)!important;color:#fff!important;border:0!important;box-shadow:0 4px 12px rgba(0,104,255,.35)!important}.chip{transition:.15s}.chip:hover{border-color:var(--pr);transform:translateY(-1px)}.chip.on{box-shadow:0 4px 10px rgba(200,16,46,.3)}nav button{transition:.2s}nav button:hover{background:rgba(255,255,255,.15);opacity:1}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid rgba(0,104,255,.45);outline-offset:2px}.rip{position:absolute;border-radius:50%;background:rgba(255,255,255,.5);transform:scale(0);animation:rp .55s ease-out;pointer-events:none}@keyframes rp{to{transform:scale(3);opacity:0}}@media(prefers-reduced-motion:reduce){.btn,.chip,nav button{transition:none}.rip{display:none}}.pimg{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:12px;background:var(--sf)}.thumb{width:40px;height:40px;object-fit:cover;border-radius:8px;vertical-align:middle;flex:none}
 @media(max-width:420px){.grid{grid-template-columns:1fr}}
 footer{text-align:center;color:var(--mu);font-size:13px;padding:24px}
 </style></head><body>
@@ -155,7 +155,7 @@ const FBCFG={apiKey:"AIzaSyDPQtekTRqutOm0hCEf-roeZBA8c3qrSJg",authDomain:"muasam
 let fs=null;const cloud={shops:{},products:{}};
 const js=o=>JSON.stringify(o,Object.keys(o).sort());
 const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}};
-const setSt=(k,e)=>{const el=$('#st');if(el)el.textContent=k==='ok'?'☁️ Đã kết nối Firebase · dữ liệu đồng bộ trực tuyến':k==='err'?'⚠️ Chưa kết nối được Firebase, đang lưu trên máy ('+((e&&(e.code||e.message))||'không rõ')+')':'💾 Đang kết nối Firebase...'};
+const setSt=(k,e)=>{const el=$('#st');if(el)el.textContent=k==='ok'?'':k==='err'?'⚠️ Chưa kết nối được Firebase, đang lưu trên máy ('+((e&&(e.code||e.message))||'không rõ')+')':''};
 function cloudSync(){if(!fs)return;['shops','products'].forEach(c=>{const cur={};db[c].forEach(x=>cur[x.id]=js(x));
 for(const id in cur)if(cloud[c][id]!==cur[id]){cloud[c][id]=cur[id];fs.collection(c).doc(id).set(JSON.parse(cur[id])).catch(e=>setSt('err',e))}
 for(const id in cloud[c])if(!(id in cur)){delete cloud[c][id];fs.collection(c).doc(id).delete().catch(e=>setSt('err',e))}})}
@@ -172,5 +172,6 @@ fs=f;
 if(a.empty&&b2.empty){cloudSync()}else{adopt('shops',a);adopt('products',b2);persist();render()}
 ['shops','products'].forEach(c=>f.collection(c).onSnapshot(s=>{if(s.metadata.hasPendingWrites)return;adopt(c,s);persist();const ae=document.activeElement;if(!$('#dlg').open&&!(ae&&ae.id==='qs'))render()},e=>setSt('err',e)));
 setSt('ok')}catch(e){try{f&&f.terminate()}catch(_){}fs=null;setSt('err',e)}}
+document.addEventListener('pointerdown',e=>{const b=e.target.closest('.btn');if(!b)return;const r=b.getBoundingClientRect(),d=Math.max(r.width,r.height),s=document.createElement('span');s.className='rip';s.style.cssText=`width:${d}px;height:${d}px;left:${e.clientX-r.left-d/2}px;top:${e.clientY-r.top-d/2}px`;b.appendChild(s);setTimeout(()=>s.remove(),600)});
 const dlg=$('#dlg');render();initFB();
 </script></body></html>
