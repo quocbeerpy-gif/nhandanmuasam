@@ -95,7 +95,7 @@ el.innerHTML=a.length?a.map(p=>{const s=shop(p.shopId)||{};return `<div class="c
 ${p.desc?`<div class="pd">${esc(p.desc)}</div>`:''}<div class="mu">🏪 <a href="#" onclick="event.stopPropagation();detail('${s.id}');return false" style="color:inherit">${esc(s.name)}</a></div>
 ${s.phone?`<div class="row" onclick="event.stopPropagation()"><a class="btn sm g" href="tel:${esc(s.phone)}">📞 Gọi</a><a class="btn sm zalo" target="_blank" rel="noopener" href="${zUrl(s)}">💬 Zalo</a></div>`:''}</div>`}).join(''):'<div class="empty">Không tìm thấy mặt hàng phù hợp.</div>'}}
 function render(){document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===view));const A=$('#app');
-if(view==='manage')return manage(A);if(view==='dash')return dash(A);
+if(view==='manage'){if(!isAdmin()){view='shops';return render()}return manage(A)}if(view==='dash')return dash(A);
 const hero=view==='shops'?`<div class="hero"><h1>Hòa Xuân Shopping</h1><p>Khám phá hộ kinh doanh và hàng hóa quanh bạn, mua trực tiếp, giá minh bạch.</p>
 <div class="stats"><div class="stat"><b>${db.shops.length}</b>Hộ kinh doanh</div><div class="stat"><b>${db.products.length}</b>Mặt hàng</div><div class="stat"><b>${new Set(db.shops.map(s=>s.cat)).size}</b>Ngành hàng</div></div></div>`:'';
 A.innerHTML=hero+bar(view)+'<div class="grid" id="list"></div>';bind();list()}
@@ -160,7 +160,17 @@ A.innerHTML=`<h2 style="margin-top:4px">📊 Dashboard tổng quan</h2><div clas
 <div class="pn"><h3>🏆 Top hộ nhiều mặt hàng nhất</h3>${rk(topS,([n,c])=>`<div class="rk"><span>${esc(n)}</span><b>${c} mặt hàng</b></div>`)}</div>
 <div class="pn"><h3>💎 Top mặt hàng giá cao</h3>${rk(topP,p=>`<div class="rk"><span>${esc(p.name)} <span class="mu">· ${esc(sn(p.shopId))}</span></span><b>${money(p.price)}</b></div>`)}</div>
 <div class="pn wd"><h3>📋 Độ hoàn thiện dữ liệu</h3><div class="dg">${comp.map(([l,n,t])=>`<div><div style="display:flex;justify-content:space-between;font-size:13px"><span>${l}</span><b>${pc(n,t)}% <span class="mu">(${fmt(n)}/${fmt(t)})</span></b></div><div class="pg"><i style="width:${pc(n,t)}%"></i></div></div>`).join('')}</div></div></div>`}
-function manage(A){A.innerHTML=`<h2>Quản lý dữ liệu</h2><div class="row"><button class="btn" onclick="openForm('shop')">+ Hộ kinh doanh</button><button class="btn" onclick="openForm('product')">+ Mặt hàng</button>
+const AU={h:'66741060efdb75928f6e10173173b3c77087cabcf9ce5e25a8d8931f05be53b1',c:1932080161170590};
+function isAdmin(){if(window._adm===true)return true;try{return sessionStorage.getItem('hxs_admin')==='1'}catch(e){return false}}
+const sha=async s=>{if(!(window.crypto&&crypto.subtle))return null;const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')};
+const c53=s=>{let a=0xdeadbeef,b=0x41c6ce57;for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);a=Math.imul(a^c,2654435761);b=Math.imul(b^c,1597334677)}a=Math.imul(a^(a>>>16),2246822507)^Math.imul(b^(b>>>13),3266489909);b=Math.imul(b^(b>>>16),2246822507)^Math.imul(a^(a>>>13),3266489909);return 4294967296*(2097151&b)+(a>>>0)};
+function askLogin(){const d=$('#dlg');d.innerHTML=`<h2 style="margin-top:0">🔒 Đăng nhập quản trị</h2><p class="mu">Khu vực Quản lý dữ liệu chỉ dành cho quản trị viên.</p><div class="f"><div class="w"><label>Tên đăng nhập</label><input id="lu" autocomplete="username" autocapitalize="none" autocorrect="off"></div><div class="w"><label>Mật khẩu</label><input id="lp" type="password" autocomplete="current-password"></div></div><div id="le" class="no" style="min-height:22px;margin-top:8px;font-size:13px"></div><div class="row"><button class="btn" id="lg">Đăng nhập</button><button class="btn s" onclick="dlg.close()">Hủy</button></div>`;
+d.showModal();$('#lu').focus();
+const run=async()=>{const k='hxs|'+$('#lu').value.trim()+'|'+$('#lp').value,h=await sha(k),ok=h?h===AU.h:c53(k)===AU.c;
+if(ok){window._adm=true;try{sessionStorage.setItem('hxs_admin','1')}catch(e){}d.close();go('manage')}else{$('#le').textContent='Sai tên đăng nhập hoặc mật khẩu.';$('#lp').value='';$('#lp').focus()}};
+$('#lg').onclick=run;['#lu','#lp'].forEach(s=>$(s).onkeydown=e=>{if(e.key==='Enter')run()})}
+function logout(){window._adm=false;try{sessionStorage.removeItem('hxs_admin')}catch(e){}go('shops')}
+function manage(A){A.innerHTML=`<div class="row" style="justify-content:space-between"><h2 style="margin:4px 0">Quản lý dữ liệu</h2><button class="btn s" onclick="logout()">🔓 Đăng xuất</button></div><div class="row"><button class="btn" onclick="openForm('shop')">+ Hộ kinh doanh</button><button class="btn" onclick="openForm('product')">+ Mặt hàng</button>
 <button class="btn s" onclick="exp()">⬇ Xuất JSON</button><button class="btn s" onclick="csv()">⬇ Xuất CSV mặt hàng</button><label class="btn g">📥 Nhập Excel hộ kinh doanh<input type="file" accept=".xlsx,.xls" hidden onchange="xlsPick(this)"></label><label class="btn s">⬆ Nhập JSON<input type="file" accept=".json" hidden onchange="imp(this)"></label></div>
 <h2>Hộ kinh doanh (${db.shops.length})</h2><div class="tw"><table><tr><th>Tên</th><th>Chủ hộ</th><th>Ngành</th><th>Khu vực</th><th>SĐT</th><th></th></tr>
 ${db.shops.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(s.owner)}</td><td>${esc(s.cat)}</td><td>${esc(s.ward)}</td><td>${esc(s.phone)}</td><td><button class="btn s sm" onclick="openForm('shop','${s.id}')">Sửa</button> <button class="btn s sm" onclick="del('shops','${s.id}')">Xóa</button></td></tr>`).join('')}</table></div>
@@ -184,7 +194,8 @@ function exp(){dl('hoa-xuan-shopping.json',JSON.stringify(db,null,1),'applicatio
 function csv(){const r=[['Tên','Cửa hàng','Nhóm','Giá','Đơn vị','Tồn','Mô tả'],...db.products.map(p=>[p.name,shop(p.shopId)?.name,p.cat,p.price,p.unit,p.stock,p.desc])];
 dl('mat-hang.csv','\ufeff'+r.map(x=>x.map(c=>'"'+String(c??'').replace(/"/g,'""')+'"').join(',')).join('\n'),'text/csv')}
 function imp(i){const f=i.files[0];if(!f)return;f.text().then(t=>{try{const j=JSON.parse(t);if(!Array.isArray(j.shops)||!Array.isArray(j.products))throw 0;db=j;save();render()}catch(e){toast('File JSON không hợp lệ.')}})}
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{view=b.dataset.v;q.cat='';q.s='';q.ward='';q.sort=view=='shops'?'rating':'name';render();scrollTo(0,0)});
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{const v=b.dataset.v;if(v==='manage'&&!isAdmin()){askLogin();return}go(v)});
+function go(v){view=v;q.cat='';q.s='';q.ward='';q.sort=view=='shops'?'rating':'name';render();scrollTo(0,0)}
 function compress(file,max=640,q=.72){return new Promise((res,rej)=>{const r=new FileReader();r.onerror=rej;r.onload=()=>{const im=new Image();im.onerror=rej;im.onload=()=>{let w=im.width,h=im.height;const k=Math.min(1,max/Math.max(w,h));w=Math.round(w*k);h=Math.round(h*k);const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,w,h);x.drawImage(im,0,0,w,h);let d=c.toDataURL('image/jpeg',q);if(d.length>150000)d=c.toDataURL('image/jpeg',.5);res(d)};im.src=r.result};r.readAsDataURL(file)})}
 async function pickImg(i){const f=i.files[0];if(!f)return;try{const d=await compress(f);$('[name=img]').value=d;const p=$('#ipv');p.src=d;p.style.display='';$('#isz').textContent='Đã nén: '+Math.round(d.length*.75/1024)+' KB (gốc '+Math.round(f.size/1024)+' KB)'}catch(e){toast('Không đọc được ảnh này.')}}
 async function cp(n){try{await navigator.clipboard.writeText(n);toast('Đã sao chép: '+n)}catch(e){toast('Số Zalo: '+n)}}
