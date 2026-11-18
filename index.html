@@ -145,24 +145,20 @@ function bars(rows,col){const r=rows.slice(0,8),m=Math.max(1,...r.map(x=>x[1]));
 function donut(rows,label,pal){pal=pal||PAL;const t=rows.reduce((s,x)=>s+x[1],0);let a=0;const seg=rows.filter(x=>x[1]>0).map(([k,v])=>{const i=rows.findIndex(r=>r[0]===k),s=a;a+=v/t*100;return `${pal[i%pal.length]} ${s}% ${a}%`}).join(',');
 return `<div class="dn"><div class="dc" style="background:conic-gradient(${seg||'var(--bd) 0 100%'})"><span><b>${fmt(t)}</b>${label}</span></div><div class="lg">${rows.map(([k,v],i)=>`<div><i style="background:${pal[i%pal.length]}"></i>${esc(k)} <b>${fmt(v)}</b> <span class="mu">(${t?Math.round(v/t*100):0}%)</span></div>`).join('')}</div></div>`}
 function dash(A){const S=db.shops,P=db.products,pc=(n,t)=>t?Math.round(n/t*100):0,sn=id=>(shop(id)||{}).name||'-';
-const cm=n=>n>=1e9?(n/1e9).toFixed(1)+' tỷ':n>=1e6?(n/1e6).toFixed(1)+' triệu':money(n);
-const sv=P.reduce((s,p)=>s+(+p.price||0)*(+p.stock||0),0),out=P.filter(p=>!(p.stock>0)),low=P.filter(p=>p.stock>0&&p.stock<=5),okN=P.length-out.length-low.length;
 const withP=new Set(P.map(p=>p.shopId)).size,rt=S.filter(s=>s.rating>0),avg=rt.length?(rt.reduce((a,s)=>a+ +s.rating,0)/rt.length).toFixed(1):'-';
 const byCat=cnt(S,s=>s.cat),byWard=cnt(S,s=>s.ward),pCat=cnt(P,p=>p.cat);
 const mg=(r,n)=>r.length>n?[...r.slice(0,n-1),['Còn lại',r.slice(n-1).reduce((a,x)=>a+x[1],0)]]:r;
 const comp=[['Số điện thoại',S.filter(s=>s.phone).length,S.length],['Tên chủ hộ',S.filter(s=>s.owner).length,S.length],['Địa chỉ',S.filter(s=>s.addr).length,S.length],['Hộ đã có mặt hàng',withP,S.length],['Mặt hàng có ảnh',P.filter(p=>p.img).length,P.length],['Mặt hàng có mô tả',P.filter(p=>p.desc).length,P.length]];
-const topS=S.map(s=>[s.name,P.filter(p=>p.shopId==s.id).length]).filter(x=>x[1]).sort((a,b)=>b[1]-a[1]).slice(0,5),topP=[...P].sort((a,b)=>b.price-a.price).slice(0,5),warn=[...out,...low].slice(0,6);
-const kp=[['🏪',fmt(S.length),'Hộ kinh doanh'],['📦',fmt(P.length),'Mặt hàng'],['🏷️',fmt(byCat.length),'Ngành hàng'],['📍',fmt(byWard.length),'Khu vực'],['💰',cm(sv),'Giá trị tồn kho'],['⭐',avg,'Đánh giá trung bình'],['✅',pc(withP,S.length)+'%','Hộ đã có mặt hàng'],['⚠️',fmt(out.length+low.length),'Hàng hết/sắp hết']];
+const topS=S.map(s=>[s.name,P.filter(p=>p.shopId==s.id).length]).filter(x=>x[1]).sort((a,b)=>b[1]-a[1]).slice(0,5),topP=[...P].sort((a,b)=>b.price-a.price).slice(0,5);
+const kp=[['🏪',fmt(S.length),'Hộ kinh doanh'],['📦',fmt(P.length),'Mặt hàng'],['🏷️',fmt(byCat.length),'Ngành hàng'],['📍',fmt(byWard.length),'Khu vực'],['⭐',avg,'Đánh giá trung bình'],['✅',pc(withP,S.length)+'%','Hộ đã có mặt hàng']];
 const rk=(a,f)=>a.length?a.map(f).join(''):'<div class="mu">Chưa có dữ liệu.</div>';
 A.innerHTML=`<h2 style="margin-top:4px">📊 Dashboard tổng quan</h2><div class="mu" style="margin:-4px 0 14px">Cập nhật lúc ${new Date().toLocaleTimeString('vi-VN')} · ${new Date().toLocaleDateString('vi-VN')}</div>
 <div class="kg">${kp.map(([i,v,l])=>`<div class="kp"><div class="ki">${i}</div><b>${v}</b><small>${l}</small></div>`).join('')}</div>
 <div class="dg"><div class="pn"><h3>Hộ kinh doanh theo ngành hàng</h3>${bars(byCat,'linear-gradient(90deg,#c8102e,#f97316)')}</div>
 <div class="pn"><h3>Hộ kinh doanh theo khu vực</h3>${donut(mg(byWard,5),'hộ')}</div>
 <div class="pn"><h3>Mặt hàng theo nhóm hàng</h3>${bars(pCat,'linear-gradient(90deg,#0f7a4d,#34d399)')}</div>
-<div class="pn"><h3>Tình trạng tồn kho</h3>${donut([['Còn hàng',okN],['Sắp hết (≤5)',low.length],['Hết hàng',out.length]],'mặt hàng',['#0f7a4d','#f59e0b','#c8102e'])}</div>
 <div class="pn"><h3>🏆 Top hộ nhiều mặt hàng nhất</h3>${rk(topS,([n,c])=>`<div class="rk"><span>${esc(n)}</span><b>${c} mặt hàng</b></div>`)}</div>
 <div class="pn"><h3>💎 Top mặt hàng giá cao</h3>${rk(topP,p=>`<div class="rk"><span>${esc(p.name)} <span class="mu">· ${esc(sn(p.shopId))}</span></span><b>${money(p.price)}</b></div>`)}</div>
-<div class="pn"><h3>⚠️ Cảnh báo tồn kho</h3>${rk(warn,p=>`<div class="rk"><span>${esc(p.name)} <span class="mu">· ${esc(sn(p.shopId))}</span></span><b class="${p.stock>0?'':'no'}">${p.stock>0?'Còn '+p.stock:'Hết hàng'}</b></div>`)}</div>
 <div class="pn wd"><h3>📋 Độ hoàn thiện dữ liệu</h3><div class="dg">${comp.map(([l,n,t])=>`<div><div style="display:flex;justify-content:space-between;font-size:13px"><span>${l}</span><b>${pc(n,t)}% <span class="mu">(${fmt(n)}/${fmt(t)})</span></b></div><div class="pg"><i style="width:${pc(n,t)}%"></i></div></div>`).join('')}</div></div></div>`}
 function manage(A){A.innerHTML=`<h2>Quản lý dữ liệu</h2><div class="row"><button class="btn" onclick="openForm('shop')">+ Hộ kinh doanh</button><button class="btn" onclick="openForm('product')">+ Mặt hàng</button>
 <button class="btn s" onclick="exp()">⬇ Xuất JSON</button><button class="btn s" onclick="csv()">⬇ Xuất CSV mặt hàng</button><label class="btn g">📥 Nhập Excel hộ kinh doanh<input type="file" accept=".xlsx,.xls" hidden onchange="xlsPick(this)"></label><label class="btn s">⬆ Nhập JSON<input type="file" accept=".json" hidden onchange="imp(this)"></label></div>
