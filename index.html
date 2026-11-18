@@ -64,7 +64,7 @@ const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){toast(
 const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 let view='shops',q={s:'',cat:'',ward:'',sort:'rating'};
 const shop=id=>db.shops.find(s=>s.id==id);
-const adr=s=>[s.addr,s.ward].filter((v,i,a)=>v&&a.indexOf(v)===i).join(', ');
+const adr=s=>s.addr&&s.ward&&s.addr.includes(s.ward)?s.addr:[s.addr,s.ward].filter((v,i,a)=>v&&a.indexOf(v)===i).join(', ');
 const zl=s=>{let n=String(s.zalo||s.phone||'').replace(/\D/g,'');if(n.startsWith('0'))n='84'+n.slice(1);return n};const zUrl=s=>'https://zalo.me/'+zl(s);
 const dataCats=()=>{const m={};(view==='shops'?db.shops:db.products).forEach(x=>{if(x.cat)m[x.cat]=(m[x.cat]||0)+1});return Object.entries(m).sort((a,b)=>a[0].localeCompare(b[0],'vi'))};
 const catList=()=>[...new Set([...Object.keys(CATS),...db.shops.map(s=>s.cat),...db.products.map(p=>p.cat)].filter(Boolean))];
@@ -114,8 +114,31 @@ ${p.img?`<img class="pimg" style="margin:12px 0" src="${p.img}" alt="${esc(p.nam
 <div class="mu" style="margin-top:12px">🏪 ${esc(s.name||'')}</div>
 <div class="row" style="margin-top:12px">${s.phone?`<a class="btn g" href="tel:${esc(s.phone)}">📞 Gọi</a>`:''}${(s.zalo||s.phone)?`<a class="btn zalo" target="_blank" rel="noopener" href="${zUrl(s)}">💬 Chat Zalo</a>`:''}</div>`;
 if(!$('#dlg').open)$('#dlg').showModal()}
+let xlsData=[];const NK=s=>String(s||'').replace(/[^0-9a-z]/gi,'').replace(/^0+/,'').toLowerCase();
+const sx=v=>v==null||v instanceof Date?'':String(v).trim();
+const isDis=s=>/giải thể|xóa tên/i.test(s),isSus=s=>/tạm ngừng/i.test(s);
+async function xlsPick(i){const f=i.files[0];i.value='';if(!f)return;toast('Đang đọc file Excel...');
+try{if(!window.XLSX)await loadJS('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+const wb=XLSX.read(await f.arrayBuffer(),{type:'array',cellDates:true}),ws=wb.Sheets[wb.SheetNames[0]];
+const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true}),best={};let n=0;
+rows.forEach(r=>{const mst=sx(r[4]),name=sx(r[5]);if(!mst||!name||/^m[ãa]\s*s[ốo]/i.test(mst)||name==='Tên HKD')return;n++;const k=NK(mst),d=r[1] instanceof Date?+r[1]:(Date.parse(r[1])||0);if(!best[k]||d>best[k].d)best[k]={d,r}});
+const sp=s=>sx(s).split(/,(?!\s)/).map(x=>x.trim()).filter(Boolean);
+xlsData=Object.values(best).map(({r})=>{const nn=sp(r[26]);let ph=sx(r[8]).replace(/\D/g,'');if(ph.length==9)ph='0'+ph;
+return{mst:sx(r[4]),name:sx(r[5]),phone:ph,addr:sx(r[12]),owner:sx(r[13]),ward:sx(r[24])||sx(r[0]),cat:nn[0]||'Khác',desc:nn.length>1?'Ngành nghề: '+nn.join('; '):'',st:sx(r[10])}});
+if(!xlsData.length)return toast('Không tìm thấy dữ liệu hộ kinh doanh trong file.');
+const nd=xlsData.filter(x=>isDis(x.st)).length,ns=xlsData.filter(x=>isSus(x.st)).length,d=$('#dlg');
+d.innerHTML=`<h2 style="margin-top:0">Nhập Excel hộ kinh doanh</h2><p>Đọc <b>${n}</b> dòng, gộp theo mã số còn <b>${xlsData.length}</b> hộ (lấy dòng đăng ký mới nhất của mỗi hộ).</p><p class="mu">Trong đó ${nd} hộ đã giải thể/xóa tên, ${ns} hộ tạm ngừng hoạt động.</p>
+<label style="display:block;margin:6px 0"><input type="checkbox" id="xd" checked style="width:auto"> Bỏ qua hộ đã giải thể/xóa tên</label><label style="display:block;margin:6px 0"><input type="checkbox" id="xs" style="width:auto"> Bỏ qua hộ tạm ngừng hoạt động</label>
+<p class="mu">Hộ đã có (trùng mã số) sẽ được cập nhật, hộ mới sẽ được thêm. Giờ mở cửa mặc định 8:00 - 17:00, đánh giá 5 sao.</p>
+<div class="row"><button class="btn" onclick="xlsGo()">Nhập dữ liệu</button><button class="btn s" onclick="dlg.close()">Hủy</button></div>`;d.showModal()}catch(e){toast('Không đọc được file Excel.')}}
+function xlsGo(){const sd=$('#xd').checked,ss=$('#xs').checked;let add=0,upd=0,skip=0;
+xlsData.forEach(x=>{if((sd&&isDis(x.st))||(ss&&isSus(x.st))){skip++;return}
+const k=NK(x.mst),o=db.shops.find(s=>NK(s.mst)===k),b={name:x.name,mst:x.mst,owner:x.owner,phone:x.phone,cat:x.cat,ward:x.ward,addr:x.addr};
+if(o){Object.keys(b).forEach(p=>{if(b[p])o[p]=b[p]});if(!o.hours)o.hours='8:00 - 17:00';if(!(o.rating>0))o.rating=5;if(!o.desc)o.desc=x.desc;upd++}
+else{db.shops.push({id:uid('s'),...b,hours:'8:00 - 17:00',rating:5,desc:x.desc});add++}});
+save();dlg.close();render();toast(`Đã thêm ${add} hộ mới, cập nhật ${upd} hộ, bỏ qua ${skip} hộ.`)}
 function manage(A){A.innerHTML=`<h2>Quản lý dữ liệu</h2><div class="row"><button class="btn" onclick="openForm('shop')">+ Hộ kinh doanh</button><button class="btn" onclick="openForm('product')">+ Mặt hàng</button>
-<button class="btn s" onclick="exp()">⬇ Xuất JSON</button><button class="btn s" onclick="csv()">⬇ Xuất CSV mặt hàng</button><label class="btn s">⬆ Nhập JSON<input type="file" accept=".json" hidden onchange="imp(this)"></label><button class="btn s" onclick="ask('Nạp lại danh sách 139 hộ kinh doanh từ file Excel? Dữ liệu hiện tại (kể cả mặt hàng) sẽ bị thay thế.',()=>{db=seed();save();render()})">Nạp danh sách từ Excel (139 hộ)</button></div>
+<button class="btn s" onclick="exp()">⬇ Xuất JSON</button><button class="btn s" onclick="csv()">⬇ Xuất CSV mặt hàng</button><label class="btn g">📥 Nhập Excel hộ kinh doanh<input type="file" accept=".xlsx,.xls" hidden onchange="xlsPick(this)"></label><label class="btn s">⬆ Nhập JSON<input type="file" accept=".json" hidden onchange="imp(this)"></label><button class="btn s" onclick="ask('Nạp lại danh sách 139 hộ kinh doanh từ file Excel? Dữ liệu hiện tại (kể cả mặt hàng) sẽ bị thay thế.',()=>{db=seed();save();render()})">Nạp danh sách từ Excel (139 hộ)</button></div>
 <h2>Hộ kinh doanh (${db.shops.length})</h2><div class="tw"><table><tr><th>Tên</th><th>Chủ hộ</th><th>Ngành</th><th>Khu vực</th><th>SĐT</th><th></th></tr>
 ${db.shops.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(s.owner)}</td><td>${esc(s.cat)}</td><td>${esc(s.ward)}</td><td>${esc(s.phone)}</td><td><button class="btn s sm" onclick="openForm('shop','${s.id}')">Sửa</button> <button class="btn s sm" onclick="del('shops','${s.id}')">Xóa</button></td></tr>`).join('')}</table></div>
 <h2>Mặt hàng (${db.products.length})</h2><div class="tw"><table><tr><th>Tên</th><th>Cửa hàng</th><th>Giá</th><th>Tồn</th><th></th></tr>
