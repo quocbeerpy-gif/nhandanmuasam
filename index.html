@@ -183,26 +183,40 @@ function NEWS_SEED(){const t=Date.now(),iso=h=>dtl(new Date(t-h*36e5));return[
 const nd=a=>{const d=new Date(a.date);return isNaN(d)?'':d.toLocaleDateString('vi-VN')+' '+d.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})};
 const ago=a=>{const m=(Date.now()-new Date(a.date))/6e4;return isNaN(m)?'':m<1?'Vừa xong':m<60?Math.floor(m)+' phút trước':m<1440?Math.floor(m/60)+' giờ trước':m<43200?Math.floor(m/1440)+' ngày trước':nd(a)};
 const nth=a=>a.img?`<img src="${a.img}" alt="${esc(a.title)}" loading="lazy">`:`<div class="nph">${NI[a.cat]||'📰'}</div>`;
-const nadm=a=>isAdmin()?`<span class="row" onclick="event.stopPropagation()"><button class="btn s sm" onclick="openNews('${a.id}')">Sửa</button><button class="btn s sm" onclick="delNews('${a.id}')">Xóa</button></span>`:'';
-function newsView(A){db.news=db.news||[];const N=db.news,cats=cnt(N,n=>n.cat);
+const nadm=a=>isAdmin()&&!a.ext?`<span class="row" onclick="event.stopPropagation()"><button class="btn s sm" onclick="openNews('${a.id}')">Sửa</button><button class="btn s sm" onclick="delNews('${a.id}')">Xóa</button></span>`:'';
+let EXT=[],extSt='';try{EXT=JSON.parse(localStorage.getItem('hxs_ext')||'[]')}catch(e){}
+function ownNews(){return(db.news||[]).filter(n=>!(EXT.length&&/^n[123]$/.test(n.id)))}
+function allNews(){return[...ownNews(),...EXT]}
+const EXT_URL='https://hoaxuan.daklak.gov.vn/wp-json/wp/v2/posts?per_page=20&_embed=1';
+const htx=h=>new DOMParser().parseFromString(h||'','text/html').body.textContent.trim();
+function mapWP(p){const em=p._embedded||{},cs=((em['wp:term']||[])[0]||[]).map(c=>c.name).filter(c=>c&&!/uncategorized|chưa phân loại/i.test(c)),m=(em['wp:featuredmedia']||[])[0]||{},sz=(m.media_details||{}).sizes||{},img=(sz.medium_large||sz.large||sz.full||{}).source_url||m.source_url||'';
+const doc=new DOMParser().parseFromString((p.content||{}).rendered||'','text/html'),ps=[...doc.querySelectorAll('p')].map(x=>x.textContent.trim()).filter(Boolean);
+let sum=htx((p.excerpt||{}).rendered).replace(/\s*\[?(…|\.\.\.)\]?\s*$/,'…');if(!sum)sum=(ps[0]||'').slice(0,200);let c=cs[0]||'Tin địa phương';if(c===c.toUpperCase())c=c.charAt(0)+c.slice(1).toLowerCase();
+return{id:'x'+p.id,ext:true,url:p.link,title:htx((p.title||{}).rendered),cat:c,author:'Cổng TTĐT xã Hòa Xuân',date:String(p.date||'').slice(0,16),summary:sum,content:ps.join('\n')||sum,img}}
+async function loadExt(){extSt='wait';extStatus();try{const r=await tmo(fetch(EXT_URL),12000);if(!r.ok)throw{message:'HTTP '+r.status};const j=await r.json();if(!Array.isArray(j)||!j.length)throw{message:'không có dữ liệu'};
+EXT=j.map(mapWP);extSt='ok';try{localStorage.setItem('hxs_ext',JSON.stringify(EXT))}catch(e){}}catch(e){extSt='err'}extStatus()}
+function extRefresh(){loadExt().then(()=>{if(view==='news')newsView($('#app'))});return false}
+function extStatus(){const el=$('#exts');if(!el)return;const L='<a href="https://hoaxuan.daklak.gov.vn/" target="_blank" rel="noopener">hoaxuan.daklak.gov.vn</a>';
+el.innerHTML=extSt==='wait'?'⏳ Đang lấy tin mới từ '+L+'...':extSt==='ok'?'✅ Tin tự động từ '+L+' · '+EXT.length+' bài · <a href="#" onclick="return extRefresh()">🔄 Làm mới</a>':extSt==='err'?'⚠️ Chưa lấy được tin tự động từ '+L+(EXT.length?' (đang hiện bản lưu gần nhất)':'')+' · <a href="#" onclick="return extRefresh()">Thử lại</a>':''}
+function newsView(A){db.news=db.news||[];const N=allNews(),cats=cnt(N,n=>n.cat);
 A.innerHTML=`<div class="row" style="justify-content:space-between;margin:4px 0 12px"><div><h2 style="margin:0">📰 Tin tức Hòa Xuân</h2><div class="mu">Thông báo, thông tin và đời sống địa phương</div></div>${isAdmin()?`<button class="btn" onclick="openNews()">➕ Đăng tin mới</button>`:''}</div>
-<div class="bar"><div class="led"><input id="ns" placeholder="🔍 Tìm kiếm tin tức..." value="${esc(nq.s)}"></div></div>
+<div id="exts" class="mu" style="margin:-4px 0 10px"></div><div class="bar"><div class="led"><input id="ns" placeholder="🔍 Tìm kiếm tin tức..." value="${esc(nq.s)}"></div></div>
 <div class="chips"><button class="chip ${!nq.c?'on':''}" data-nc="">Tất cả (${N.length})</button>${cats.map(([c,k])=>`<button class="chip ${nq.c==c?'on':''}" data-nc="${esc(c)}">${NI[c]||'📰'} ${esc(c)} (${k})</button>`).join('')}</div><div id="nb"></div>`;
-$('#ns').oninput=e=>{nq.s=e.target.value;newsBody()};document.querySelectorAll('[data-nc]').forEach(b=>b.onclick=()=>{nq.c=b.dataset.nc;newsView(A)});newsBody()}
-function newsBody(){const N=[...(db.news||[])].sort((a,b)=>new Date(b.date)-new Date(a.date)),t=nq.s.toLowerCase(),el=$('#nb');if(!el)return;
+$('#ns').oninput=e=>{nq.s=e.target.value;newsBody()};document.querySelectorAll('[data-nc]').forEach(b=>b.onclick=()=>{nq.c=b.dataset.nc;newsView(A)});newsBody();extStatus();if(!window._extTried){window._extTried=true;loadExt().then(()=>{if(view==='news')newsView($('#app'))})}}
+function newsBody(){const N=allNews().sort((a,b)=>new Date(b.date)-new Date(a.date)),t=nq.s.toLowerCase(),el=$('#nb');if(!el)return;
 const L=N.filter(n=>(!nq.c||n.cat==nq.c)&&(!t||[n.title,n.summary,n.content].join(' ').toLowerCase().includes(t)));
 if(!L.length){el.innerHTML='<div class="empty">Chưa có tin tức phù hợp.</div>';return}
-const hero=!nq.c&&!t,hot=hero?(L.find(n=>n.hot)||L[0]):null,rest=hero?L.filter(n=>n!==hot):L,side=hero?rest.slice(0,3):[],list=hero?rest.slice(3):rest,top=[...N].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
-const meta=a=>`${esc(a.author||'')} · ${ago(a)} · 👁 ${fmt(a.views||0)}`;
+const hero=!nq.c&&!t,hot=hero?(L.find(n=>n.hot)||L[0]):null,rest=hero?L.filter(n=>n!==hot):L,side=hero?rest.slice(0,3):[],list=hero?rest.slice(3):rest,top=ownNews().sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,5);
+const meta=a=>`${esc(a.author||'')} · ${ago(a)} · ${a.ext?'🌐 hoaxuan.daklak.gov.vn':'👁 '+fmt(a.views||0)}`;
 el.innerHTML=(hot?`<div class="ng"><div class="nhero" onclick="ndetail('${hot.id}')">${nth(hot)}<div class="ov"><span class="nb2">${esc(hot.cat)}</span><h2>${esc(hot.title)}</h2><div class="nsm">${esc(hot.summary)}</div></div></div><div class="nside">${side.map(a=>`<div class="ns" onclick="ndetail('${a.id}')"><div class="nt">${nth(a)}</div><div><span class="nb2 s">${esc(a.cat)}</span><h4>${esc(a.title)}</h4><div class="mu">${ago(a)}</div></div></div>`).join('')}</div></div>`:'')+
 `<div class="nm"><div>${hero&&list.length?'<h3 class="nsec">Tin mới nhất</h3>':''}${list.map(a=>`<div class="ni" onclick="ndetail('${a.id}')"><div class="nt big">${nth(a)}</div><div class="nc"><span class="nb2 s">${esc(a.cat)}</span><h3>${esc(a.title)}</h3><p class="cl2">${esc(a.summary)}</p><div class="mu">${meta(a)}</div>${nadm(a)}</div></div>`).join('')}</div>
 <aside><div class="pn"><h3>🔥 Xem nhiều</h3>${top.map((a,i)=>`<div class="nr" onclick="ndetail('${a.id}')"><b>${i+1}</b><span>${esc(a.title)}</span></div>`).join('')}</div><div class="pn" style="margin-top:14px"><h3>📞 Gửi tin bài</h3><div class="mu">Liên hệ hotline <b>0905 011 933</b> để gửi thông tin, tin bài.</div></div></aside></div>`}
-function ndetail(id){const a=(db.news||[]).find(x=>x.id==id);if(!a)return;a.views=(a.views||0)+1;save();
-const rel=db.news.filter(x=>x.cat==a.cat&&x.id!=id).slice(0,3),d=$('#dlg');d.style.maxWidth='780px';
-d.innerHTML=`<div class="row" style="justify-content:space-between"><button class="btn s sm" onclick="dlg.close()">← Quay lại</button>${isAdmin()?`<span class="row"><button class="btn s sm" onclick="openNews('${a.id}')">Sửa</button><button class="btn s sm" onclick="delNews('${a.id}')">Xóa</button></span>`:''}</div>
-<div style="margin-top:12px"><span class="nb2 s">${esc(a.cat)}</span></div><h1 class="nh1">${esc(a.title)}</h1><div class="mu">${esc(a.author||'')} · ${nd(a)} · 👁 ${fmt(a.views)}</div>
+function ndetail(id){const a=allNews().find(x=>x.id==id);if(!a)return;if(!a.ext){a.views=(a.views||0)+1;save()}
+const rel=allNews().filter(x=>x.cat==a.cat&&x.id!=id).slice(0,3),d=$('#dlg');d.style.maxWidth='780px';
+d.innerHTML=`<div class="row" style="justify-content:space-between"><button class="btn s sm" onclick="dlg.close()">← Quay lại</button>${isAdmin()&&!a.ext?`<span class="row"><button class="btn s sm" onclick="openNews('${a.id}')">Sửa</button><button class="btn s sm" onclick="delNews('${a.id}')">Xóa</button></span>`:''}</div>
+<div style="margin-top:12px"><span class="nb2 s">${esc(a.cat)}</span></div><h1 class="nh1">${esc(a.title)}</h1><div class="mu">${esc(a.author||'')} · ${nd(a)} · ${a.ext?'Tin tự động':'👁 '+fmt(a.views)}</div>
 <p class="nlead">${esc(a.summary)}</p>${a.img?`<img class="nimg" src="${a.img}" alt="${esc(a.title)}">`:''}
-<div class="nbody">${esc(a.content).split(/\n+/).map(p=>`<p>${p}</p>`).join('')}</div>${rel.length?`<h3>Tin liên quan</h3>${rel.map(r=>`<div class="nr" onclick="ndetail('${r.id}')"><b>›</b><span>${esc(r.title)}</span></div>`).join('')}`:''}`;
+<div class="nbody">${esc(a.content).split(/\n+/).map(p=>`<p>${p}</p>`).join('')}</div>${a.ext?`<p><a class="btn" target="_blank" rel="noopener" href="${esc(a.url)}">Đọc bài gốc trên hoaxuan.daklak.gov.vn ↗</a></p>`:''}${rel.length?`<h3>Tin liên quan</h3>${rel.map(r=>`<div class="nr" onclick="ndetail('${r.id}')"><b>›</b><span>${esc(r.title)}</span></div>`).join('')}`:''}`;
 if(!d.open)d.showModal();d.scrollTop=0}
 function delNews(id){ask('Xóa tin này?',()=>{db.news=(db.news||[]).filter(x=>x.id!=id);save();render()})}
 function openNews(id){if(!isAdmin())return askLogin();db.news=db.news||[];const a=db.news.find(x=>x.id==id)||{},now=dtl(new Date()),C=[...new Set([...NC,...db.news.map(n=>n.cat)])],d=$('#dlg');window.IMGMAX=960;d.style.maxWidth='720px';
