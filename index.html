@@ -265,7 +265,7 @@ const FBCFG={apiKey:"AIzaSyDPQtekTRqutOm0hCEf-roeZBA8c3qrSJg",authDomain:"muasam
 let fs=null;const cloud={shops:{},products:{},news:{}};
 const js=o=>JSON.stringify(o,Object.keys(o).sort());
 const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}};
-const setSt=(k,e)=>{const el=$('#st');if(el)el.textContent=k==='ok'?'':k==='err'?'⚠️ Chưa kết nối được Firebase, đang lưu trên máy ('+((e&&(e.code||e.message))||'không rõ')+')':''};
+const setSt=(k,e)=>{const el=$('#st');if(el)el.textContent=k==='ok'?'':k==='err'?(console.warn('Firebase:',e),''):''};
 function cloudSync(){if(!fs)return;['shops','products','news'].forEach(c=>{const cur={};(db[c]||[]).forEach(x=>cur[x.id]=js(x));
 for(const id in cur)if(cloud[c][id]!==cur[id]){cloud[c][id]=cur[id];fs.collection(c).doc(id).set(JSON.parse(cur[id])).catch(e=>setSt('err',e))}
 for(const id in cloud[c])if(!(id in cur)){delete cloud[c][id];fs.collection(c).doc(id).delete().catch(e=>setSt('err',e))}})}
@@ -279,7 +279,7 @@ if(!okL)throw{message:'không tải được thư viện Firebase'};
 firebase.initializeApp(FBCFG);f=firebase.firestore();f.settings({experimentalAutoDetectLongPolling:true,merge:true});
 const [a,b2,nw]=await tmo(Promise.all([f.collection('shops').get(),f.collection('products').get(),f.collection('news').get()]),9000);
 fs=f;visit();
-if(!(a.empty&&b2.empty)){adopt('shops',a);adopt('products',b2)}if(!nw.empty)adopt('news',nw);persist();render();cloudSync()
+if(!(a.empty&&b2.empty)){adopt('shops',a);adopt('products',b2)}if(!nw.empty)adopt('news',nw);persist();render();cloudSync();
 ['shops','products','news'].forEach(c=>f.collection(c).onSnapshot(s=>{if(s.metadata.hasPendingWrites)return;adopt(c,s);persist();const ae=document.activeElement;if(!$('#dlg').open&&!(ae&&ae.id==='qs'))render()},e=>setSt('err',e)));
 setSt('ok')}catch(e){try{f&&f.terminate()}catch(_){}fs=null;setSt('err',e)}}
 document.addEventListener('pointerdown',e=>{const b=e.target.closest('.btn');if(!b)return;const r=b.getBoundingClientRect(),d=Math.max(r.width,r.height),s=document.createElement('span');s.className='rip';s.style.cssText=`width:${d}px;height:${d}px;left:${e.clientX-r.left-d/2}px;top:${e.clientY-r.top-d/2}px`;b.appendChild(s);setTimeout(()=>s.remove(),600)});
